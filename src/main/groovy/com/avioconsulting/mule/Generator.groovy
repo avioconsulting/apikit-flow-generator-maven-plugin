@@ -5,7 +5,7 @@ import org.codehaus.plexus.util.FileUtils
 import org.mule.tools.apikit.ScaffolderAPI
 
 class Generator implements FileUtil {
-    private static final Namespace http = new Namespace('http://www.mulesoft.org/schema/mule/http')
+    public static final Namespace http = new Namespace('http://www.mulesoft.org/schema/mule/http')
 
     static generate(File baseDirectory,
                     String ramlPath) {
@@ -25,8 +25,14 @@ class Generator implements FileUtil {
     private static void fixHttpListenerConfigs(File flowPath) {
         def xmlParser = new XmlParser(false, true)
         def flowNode = xmlParser.parse(flowPath)
-        def httpListenerConfig = flowNode[http.'listener-config']
-        httpListenerConfig[0].'@port' = '${http.port}'
+        Node httpListenerConfig = flowNode[http.'listener-config'][0]
+        // Can be populated via a property this way
+        httpListenerConfig.'@port' = '${http.port}'
+        String existingConfigName = httpListenerConfig.@name
+        def httpsListenerConfig = flowNode.appendNode(http.'listener-config')
+        httpsListenerConfig.@protocol = 'HTTPS'
+        httpsListenerConfig.@name = existingConfigName.replace('httpListenerConfig',
+                                                               'httpsListenerConfig')
         new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 }

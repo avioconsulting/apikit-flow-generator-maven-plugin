@@ -1,5 +1,6 @@
 package com.avioconsulting.mule
 
+import groovy.xml.Namespace
 import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
@@ -11,6 +12,7 @@ import static org.junit.Assert.assertThat
 @SuppressWarnings("GroovyAssignabilityCheck")
 class GeneratorTest implements FileUtil {
     private File tempDir, appDir
+    private static Namespace http = Generator.http
 
     @Before
     void setup() {
@@ -57,8 +59,36 @@ class GeneratorTest implements FileUtil {
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
-        def httpListenerPort = xmlNode.'http:listener-config'[0].@port
+        def httpListenerPort = xmlNode[http.'listener-config'][0].@port
         assertThat httpListenerPort,
                    is(equalTo('${http.port}'))
+    }
+
+    @Test
+    void addsHttpsListener() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def httpsListenerConfig = xmlNode[http.'listener-config'].find { node ->
+            node.@protocol == 'HTTPS'
+        }
+        assert httpsListenerConfig
+        assertThat httpsListenerConfig.@name,
+                is(equalTo('api-stuff-v1-httpsListenerConfig'))
+        fail 'port, doc:name, host, keystore'
+    }
+
+    @Test
+    void keystoreSelfSigned() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 }
