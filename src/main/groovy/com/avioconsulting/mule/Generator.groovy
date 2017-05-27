@@ -48,7 +48,6 @@ class Generator implements FileUtil {
         IOUtils.copy(input, stream)
         stream.close()
         def xmlNode = xmlParser.parse(globalXmlPath)
-        setupHttpListeners(xmlNode, baseName)
         setupAutoDiscovery(xmlNode, apiName, apiVersion, baseName)
         new XmlNodePrinter(new IndentPrinter(new FileWriter(globalXmlPath))).print xmlNode
     }
@@ -62,17 +61,6 @@ class Generator implements FileUtil {
         // the naming convention auto discovery uses
         autoDiscoveryNode.@flowRef = "${baseName}-main"
         autoDiscoveryNode.@apikitRef = "${baseName}-config"
-    }
-
-    private static void setupHttpListeners(Node xmlNode, String baseName) {
-        def httpListener = xmlNode[http.'listener-config'].find { Node n ->
-            n.'@name' == 'http_replace_me'
-        } as Node
-        httpListener.@name = "${baseName}-httpListenerConfig"
-        def httpsListener = xmlNode[http.'listener-config'].find { Node n ->
-            n.'@name' == 'https_replace_me'
-        } as Node
-        httpsListener.@name = "${baseName}-httpsListenerConfig"
     }
 
     private static void alterGeneratedFlow(File flowPath) {

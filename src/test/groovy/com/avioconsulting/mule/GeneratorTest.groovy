@@ -170,7 +170,7 @@ class GeneratorTest implements FileUtil {
         assertThat httpsListenerConfig.@port,
                    is(equalTo('${http.port}'))
         assertThat httpsListenerConfig.@name,
-                   is(equalTo('api-stuff-v1-httpListenerConfig'))
+                   is(equalTo('global-http-listener-config'))
     }
 
     @Test
@@ -191,7 +191,7 @@ class GeneratorTest implements FileUtil {
         }
         assert httpsListenerConfig
         assertThat httpsListenerConfig.@name,
-                   is(equalTo('api-stuff-v1-httpsListenerConfig'))
+                   is(equalTo('global-https-listener-config'))
         assertThat httpsListenerConfig.@port,
                    is(equalTo('${https.port}'))
         assertThat httpsListenerConfig.@host,
@@ -231,6 +231,16 @@ class GeneratorTest implements FileUtil {
         // assert
         assertThat globalXmlPath.text,
                    is(containsString('<!-- foo -->'))
+    }
+
+    @Test
+    void apiPaths() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 
     @Test

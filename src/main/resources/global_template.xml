@@ -9,11 +9,11 @@
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
 http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd">
-    <http:listener-config name="http_replace_me"
+    <http:listener-config name="global-http-listener-config"
                           host="0.0.0.0"
                           port="${http.port}"
                           doc:name="HTTP Listener Configuration"/>
-    <http:listener-config name="https_replace_me"
+    <http:listener-config name="global-https-listener-config"
                           protocol="HTTPS"
                           host="0.0.0.0"
                           port="${https.port}"
