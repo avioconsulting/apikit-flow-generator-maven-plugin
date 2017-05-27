@@ -21,7 +21,17 @@ class Generator implements FileUtil {
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
         updateMuleDeployProperties(appDirectory)
-        //fixHttpListenerConfigs(flowPath)
+        removeHttpListenerConfig(flowPath)
+    }
+
+    private static void removeHttpListenerConfig(File flowPath) {
+        def xmlParser = new XmlParser(false, true)
+        def flowNode = xmlParser.parse(flowPath)
+        NodeList httpListenerConfigs = flowNode[http.'listener-config']
+        httpListenerConfigs.each { config ->
+            flowNode.remove(config)
+        }
+        new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 
     private static void updateMuleDeployProperties(File appDirectory) {
