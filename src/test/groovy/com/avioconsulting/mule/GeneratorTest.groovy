@@ -98,6 +98,26 @@ class GeneratorTest implements FileUtil {
     }
 
     @Test
+    void updatesMuleDeployProperties_alreadyThere() {
+        // arrange
+        def props = new Properties()
+        appDir.mkdirs()
+        def propsPath = join(appDir, 'mule-deploy.properties')
+        props.put('config.resources', 'existing.xml')
+        props.store(propsPath.newOutputStream(), 'Foo')
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // assert
+        props = new Properties()
+        props.load(propsPath.newInputStream())
+        assertThat props.'config.resources',
+                   is(equalTo('existing.xml,global.xml,api-stuff-v1.xml'))
+    }
+
+    @Test
     void updatesHttpPort() {
         // arrange
 

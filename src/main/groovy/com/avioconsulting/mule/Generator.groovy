@@ -20,15 +20,23 @@ class Generator implements FileUtil {
         def flowFileName = FileUtils.basename(ramlPath) + 'xml'
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
+        updateMuleDeployProperties(appDirectory)
+        //fixHttpListenerConfigs(flowPath)
+    }
+
+    private static void updateMuleDeployProperties(File appDirectory) {
         def muleDeployProperties = new Properties()
         def propsPath = join(appDirectory, 'mule-deploy.properties')
         muleDeployProperties.load(propsPath.newInputStream())
-        def existingResources = muleDeployProperties['config.resources'].split(',').collect {String s -> s.trim()}
+        String existingResourceString = muleDeployProperties['config.resources']
+        def existingResources = existingResourceString.split(',').collect { String s -> s.trim() }
+        if (existingResources.contains('global.xml')) {
+            return
+        }
         def newResources = ['global.xml'] + existingResources
         muleDeployProperties['config.resources'] = newResources.join(',')
         muleDeployProperties.store(propsPath.newOutputStream(),
                                    'Generated file')
-        //fixHttpListenerConfigs(flowPath)
     }
 
     private static void fixHttpListenerConfigs(File flowPath) {
