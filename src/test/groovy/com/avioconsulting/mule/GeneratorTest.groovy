@@ -72,7 +72,8 @@ class GeneratorTest implements FileUtil {
 
         // assert
         def props = new Properties()
-        props.load(new FileInputStream(join(appDir, 'mule-deploy.properties')))
+        def propsPath = join(appDir, 'mule-deploy.properties')
+        props.load(propsPath.newInputStream())
         assertThat props.'config.resources',
                    is(equalTo('global.xml,api-stuff-v1.xml'))
     }
@@ -80,11 +81,20 @@ class GeneratorTest implements FileUtil {
     @Test
     void updatesMuleDeployProperties() {
         // arrange
+        def props = new Properties()
+        appDir.mkdirs()
+        def propsPath = join(appDir, 'mule-deploy.properties')
+        props.put('config.resources', 'existing.xml')
+        props.store(propsPath.newOutputStream(), 'Foo')
 
         // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
 
         // assert
-        fail 'write this'
+        props = new Properties()
+        props.load(propsPath.newInputStream())
+        assertThat props.'config.resources',
+                   is(equalTo('global.xml,existing.xml,api-stuff-v1.xml'))
     }
 
     @Test
