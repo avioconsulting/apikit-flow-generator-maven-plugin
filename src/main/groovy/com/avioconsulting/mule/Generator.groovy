@@ -20,7 +20,15 @@ class Generator implements FileUtil {
         def flowFileName = FileUtils.basename(ramlPath) + 'xml'
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
-        fixHttpListenerConfigs(flowPath)
+        def muleDeployProperties = new Properties()
+        def propsPath = join(appDirectory, 'mule-deploy.properties')
+        muleDeployProperties.load(propsPath.newInputStream())
+        def existingResources = muleDeployProperties['config.resources'].split(',').collect {String s -> s.trim()}
+        def newResources = ['global.xml'] + existingResources
+        muleDeployProperties['config.resources'] = newResources.join(',')
+        muleDeployProperties.store(propsPath.newOutputStream(),
+                                   'Generated file')
+        //fixHttpListenerConfigs(flowPath)
     }
 
     private static void fixHttpListenerConfigs(File flowPath) {
@@ -44,5 +52,8 @@ class Generator implements FileUtil {
         tlsKeystore.'@keyPassword' = 'changeit'
         tlsKeystore.'@password' = 'changeit'
         new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
+        // easiest way to update the namespace
+        //def xmlText = flowPath.text
+        //xmlText.replace('xsi:schemaLocation="')
     }
 }

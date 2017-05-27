@@ -5,8 +5,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
@@ -32,7 +31,7 @@ class GeneratorTest implements FileUtil {
         FileUtils.copyFileToDirectory(sourceFile, apiDir)
     }
 
-    def getXmlNode(String xmlPath) {
+    Node getXmlNode(String xmlPath) {
         def xmlFile = join appDir, xmlPath
         assert xmlFile.exists()
         new XmlParser().parse(xmlFile)
@@ -49,6 +48,43 @@ class GeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void removesHttpConfig() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        assertThat xmlNode[http.'listener-config'],
+                   is(equalTo([]))
+    }
+
+    @Test
+    void generatesMuleDeployProperties() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // assert
+        def props = new Properties()
+        props.load(new FileInputStream(join(appDir, 'mule-deploy.properties')))
+        assertThat props.'config.resources',
+                   is(equalTo('global.xml,api-stuff-v1.xml'))
+    }
+
+    @Test
+    void updatesMuleDeployProperties() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 
     @Test
@@ -73,7 +109,8 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir, 'api-stuff-v1.raml')
 
         // assert
-        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def xmlPath = 'api-stuff-v1.xml'
+        def xmlNode = getXmlNode(xmlPath)
         def httpsListenerConfig = xmlNode[http.'listener-config'].find { node ->
             node.@protocol == 'HTTPS'
         }
@@ -98,6 +135,10 @@ class GeneratorTest implements FileUtil {
                    is(equalTo('changeit'))
         assertThat tlsKeystore.@password,
                    is(equalTo('changeit'))
+        def xmlText = join(appDir, xmlPath).text
+        assertThat xmlText,
+                   is(containsString(
+                           'xsi:schemaLocation="http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd"'))
     }
 
     @Test
