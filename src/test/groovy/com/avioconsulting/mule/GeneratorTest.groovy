@@ -118,28 +118,30 @@ class GeneratorTest implements FileUtil {
     }
 
     @Test
-    void updatesHttpPort() {
+    void globalXml_Http_Port() {
         // arrange
 
         // act
         Generator.generate(tempDir, 'api-stuff-v1.raml')
 
         // assert
-        def xmlNode = getXmlNode('api-stuff-v1.xml')
-        def httpListenerPort = xmlNode[http.'listener-config'][0].@port
-        assertThat httpListenerPort,
+        def xmlNode = getXmlNode('global.xml')
+        def httpsListenerConfig = xmlNode[http.'listener-config'][0]
+        assertThat httpsListenerConfig.@port,
                    is(equalTo('${http.port}'))
+        assertThat httpsListenerConfig.@name,
+                   is(equalTo('api-stuff-v1-httpListenerConfig'))
     }
 
     @Test
-    void addsHttpsListener() {
+    void globalXml_Https_Port() {
         // arrange
 
         // act
         Generator.generate(tempDir, 'api-stuff-v1.raml')
 
         // assert
-        def xmlPath = 'api-stuff-v1.xml'
+        def xmlPath = 'global.xml'
         def xmlNode = getXmlNode(xmlPath)
         def httpsListenerConfig = xmlNode[http.'listener-config'].find { node ->
             node.@protocol == 'HTTPS'
@@ -165,10 +167,16 @@ class GeneratorTest implements FileUtil {
                    is(equalTo('changeit'))
         assertThat tlsKeystore.@password,
                    is(equalTo('changeit'))
-        def xmlText = join(appDir, xmlPath).text
-        assertThat xmlText,
-                   is(containsString(
-                           'xsi:schemaLocation="http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd"'))
+    }
+
+    @Test
+    void globalXmlAlreadyExists() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 
     @Test
