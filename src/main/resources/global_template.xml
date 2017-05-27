@@ -22,8 +22,8 @@ http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/sche
             <tls:key-store type="jks"
                            path="keystores/listener_keystore.jks"
                            alias="selfsigned"
-                           keyPassword="changeit"
-                           password="changeit"/>
+                           keyPassword="${listener.keystore.password}"
+                           password="${listener.keystore.password}"/>
         </tls:context>
     </http:listener-config>
     <api-platform-gw:api apiName="theApiName"

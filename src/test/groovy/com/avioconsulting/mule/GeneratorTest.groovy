@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
 class GeneratorTest implements FileUtil {
-    private File tempDir, appDir
+    private File tempDir, appDir, mainDir
     private static Namespace http = Generator.http
     private static Namespace tls = Generator.tls
     public static final Namespace autoDiscovery = Generator.autoDiscovery
@@ -22,7 +22,7 @@ class GeneratorTest implements FileUtil {
             tempDir.deleteDir()
         }
         tempDir.mkdirs()
-        def mainDir = join tempDir, 'src', 'main'
+        mainDir = join tempDir, 'src', 'main'
         mainDir.mkdirs()
         appDir = join mainDir, 'app'
         appDir.mkdirs()
@@ -207,9 +207,9 @@ class GeneratorTest implements FileUtil {
         assertThat tlsKeystore.@alias,
                    is(equalTo('selfsigned'))
         assertThat tlsKeystore.@keyPassword,
-                   is(equalTo('changeit'))
+                   is(equalTo('${listener.keystore.password}'))
         assertThat tlsKeystore.@password,
-                   is(equalTo('changeit'))
+                   is(equalTo('${listener.keystore.password}'))
     }
 
     @Test
@@ -255,9 +255,36 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22')
 
         // assert
-        fail 'write this'
+        assert join(mainDir, 'resources', 'keystores', 'listener_keystore.jks').exists()
+    }
+
+    @Test
+    void keystore_alreadyThere() {
+        // arrange
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22')
+        def keystorePath = join(mainDir, 'resources', 'keystores', 'listener_keystore.jks')
+        assert keystorePath.exists()
+        def existingKeystoreBits = keystorePath.readBytes()
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22')
+
+        // assert
+        assert keystorePath.exists()
+        assertThat keystorePath.readBytes(),
+                   is(equalTo(existingKeystoreBits))
     }
 
     @Test
