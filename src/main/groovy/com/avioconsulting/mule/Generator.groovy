@@ -27,7 +27,9 @@ class Generator implements FileUtil {
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
         updateMuleDeployProperties(appDirectory)
-        alterGeneratedFlow(flowPath)
+        alterGeneratedFlow(flowPath,
+                           apiName,
+                           apiVersion)
         setupGlobalConfig(appDirectory,
                           baseName,
                           apiName,
@@ -63,18 +65,31 @@ class Generator implements FileUtil {
         autoDiscoveryNode.@apikitRef = "${baseName}-config"
     }
 
-    private static void alterGeneratedFlow(File flowPath) {
+    private static void alterGeneratedFlow(File flowPath,
+                                           String apiName,
+                                           String apiVersion) {
         def flowNode = xmlParser.parse(flowPath)
         removeHttpListenerConfigs(flowNode)
-        parameterizeHttpListeners(flowNode)
+        modifyHttpListeners(flowNode,
+                            apiName,
+                            apiVersion)
         new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 
-    private static void parameterizeHttpListeners(Node flowNode) {
+    private static void modifyHttpListeners(Node flowNode,
+                                            String apiName,
+                                            String apiVersion) {
         def listeners = flowNode.flow[http.listener] as NodeList
         listeners.each { listener ->
-            // supplied via properties to allow HTTP vs. HTTPS toggle
+            // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
             listener.'@config-ref' = '${http.listener.config}'
+            // want to be able to combine projects later, so be able to share a single listener config
+            // by using paths
+            def isConsole = (listener.@path as String).contains('console')
+            def apiParts = [apiName]
+            apiParts << (isConsole ? 'console' : 'api')
+            apiParts += [apiVersion, '*']
+            listener.@path = '/' + apiParts.join('/')
         }
     }
 

@@ -238,9 +238,16 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22')
 
         // assert
-        fail 'write this'
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def listeners = xmlNode.flow[http.listener].'@path'
+        assertThat listeners,
+                   is(equalTo(['/stuff/api/v22/*', '/stuff/console/v22/*']))
     }
 
     @Test
