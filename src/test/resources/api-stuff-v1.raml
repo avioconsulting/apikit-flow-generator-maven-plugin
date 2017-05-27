@@ -1,0 +1,21 @@
+#%RAML 1.0
+title: Test API
+mediaType: application/json
+version: v1
+baseUri: http://localhost/api/{version}
+securitySchemes:
+types:
+  Ack: string
+
+/endpoint:
+  description: Submits stuff
+  post:
+    body:
+      application/json:
+        type: Ack
+    responses:
+      202:
+        description: The request has been submitted in the right format and is queued for processing.
+        body:
+          application/json:
+            type: Ack
