@@ -24,6 +24,9 @@ class GenerateMojo extends AbstractMojo {
 
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
-        Generator.generate(mavenProject.basedir, ramlPath)
+        Generator.generate(mavenProject.basedir,
+                           ramlPath,
+                           apiName,
+                           apiVersion)
     }
 }
