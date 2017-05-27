@@ -28,10 +28,16 @@ class Generator implements FileUtil {
         assert flowPath.exists()
         updateMuleDeployProperties(appDirectory)
         removeHttpListenerConfig(flowPath)
-        setupGlobalConfig(appDirectory, baseName)
+        setupGlobalConfig(appDirectory,
+                          baseName,
+                          apiName,
+                          apiVersion)
     }
 
-    private static void setupGlobalConfig(File appDirectory, String baseName) {
+    private static void setupGlobalConfig(File appDirectory,
+                                          String baseName,
+                                          String apiName,
+                                          String apiVersion) {
         def globalXmlPath = join(appDirectory, 'global.xml')
         if (globalXmlPath.exists()) {
             return
@@ -42,6 +48,23 @@ class Generator implements FileUtil {
         IOUtils.copy(input, stream)
         stream.close()
         def xmlNode = xmlParser.parse(globalXmlPath)
+        setupHttpListeners(xmlNode, baseName)
+        setupAutoDiscovery(xmlNode, apiName, apiVersion, baseName)
+        new XmlNodePrinter(new IndentPrinter(new FileWriter(globalXmlPath))).print xmlNode
+    }
+
+    private static void setupAutoDiscovery(Node xmlNode, String apiName, String apiVersion, String baseName) {
+        def autoDiscoveryNode = xmlNode[autoDiscovery.'api'][0] as Node
+        assert autoDiscoveryNode
+        // deal with API Manager's lack of environment specific API Definitions
+        autoDiscoveryNode.@apiName = "${apiName}\${api.env.suffix}"
+        autoDiscoveryNode.@version = apiVersion
+        // the naming convention auto discovery uses
+        autoDiscoveryNode.@flowRef = "${baseName}-main"
+        autoDiscoveryNode.@apikitRef = "${baseName}-config"
+    }
+
+    private static void setupHttpListeners(Node xmlNode, String baseName) {
         def httpListener = xmlNode[http.'listener-config'].find { Node n ->
             n.'@name' == 'http_replace_me'
         } as Node
@@ -50,7 +73,6 @@ class Generator implements FileUtil {
             n.'@name' == 'https_replace_me'
         } as Node
         httpsListener.@name = "${baseName}-httpsListenerConfig"
-        new XmlNodePrinter(new IndentPrinter(new FileWriter(globalXmlPath))).print xmlNode
     }
 
     private static void removeHttpListenerConfig(File flowPath) {

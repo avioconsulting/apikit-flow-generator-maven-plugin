@@ -241,7 +241,7 @@ class GeneratorTest implements FileUtil {
         def autoDiscoveryNode = xmlNode[autoDiscovery.'api'][0] as Node
         assert autoDiscoveryNode
         assertThat autoDiscoveryNode.@apiName,
-                   is(equalTo('stuff'))
+                   is(equalTo('stuff${api.env.suffix}'))
         assertThat autoDiscoveryNode.@version,
                    is(equalTo('v1'))
         assertThat autoDiscoveryNode.@flowRef,
