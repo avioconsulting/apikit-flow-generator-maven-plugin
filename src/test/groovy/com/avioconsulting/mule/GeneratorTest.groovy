@@ -5,7 +5,9 @@ import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
@@ -172,6 +174,21 @@ class GeneratorTest implements FileUtil {
     @Test
     void globalXmlAlreadyExists() {
         // arrange
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        def globalXmlPath = join appDir, 'global.xml'
+        globalXmlPath.write "${globalXmlPath.text} <!-- foo -->"
+
+        // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // assert
+        assertThat globalXmlPath.text,
+                   is(containsString('<!-- foo -->'))
+    }
+
+    @Test
+    void keystoreSelfSigned() {
+        // arrange
 
         // act
 
@@ -180,7 +197,7 @@ class GeneratorTest implements FileUtil {
     }
 
     @Test
-    void keystoreSelfSigned() {
+    void apiAutoDiscovery() {
         // arrange
 
         // act

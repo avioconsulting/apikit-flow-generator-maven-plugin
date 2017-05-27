@@ -30,6 +30,9 @@ class Generator implements FileUtil {
 
     private static void setupGlobalConfig(File appDirectory, String baseName) {
         def globalXmlPath = join(appDirectory, 'global.xml')
+        if (globalXmlPath.exists()) {
+            return
+        }
         def input = this.getResourceAsStream('/global_template.xml')
         assert input
         def stream = globalXmlPath.newOutputStream()
