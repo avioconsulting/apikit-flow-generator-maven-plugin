@@ -26,12 +26,35 @@ sourceSets {
 
 sourceCompatibility = 1.8
 
+def getMavenCreds = { String id ->
+    def m2Dir = new File(System.getProperty('user.home'), '.m2')
+    def settingsXmlPath = new File(m2Dir, 'settings.xml')
+    assert settingsXmlPath.exists()
+    def xmlNode = new XmlParser().parse(settingsXmlPath.absolutePath)
+    def serverCreds = xmlNode.servers.server.find { node -> node.id.text() == id }
+    assert serverCreds != null
+    [user: serverCreds.username.text(), password: serverCreds.password.text()]
+}
+
+def eeCreds = getMavenCreds('avio-mule-ee-releases')
+
 repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
     maven {
         url "http://repository.mulesoft.org/releases"
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: 'https://devops.avioconsulting.com/nexus/repository/avio-snapshots/') {
+                authentication userName: eeCreds.user,
+                               password: eeCreds.password
+            }
+        }
     }
 }
 
