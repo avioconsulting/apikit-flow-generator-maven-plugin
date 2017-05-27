@@ -5,7 +5,7 @@ import org.apache.commons.io.IOUtils
 import org.codehaus.plexus.util.FileUtils
 import org.mule.tools.apikit.ScaffolderAPI
 import sun.security.tools.keytool.CertAndKeyGen
-import sun.security.x509.X500Name
+import sun.security.x509.*
 
 import java.security.KeyStore
 import java.security.cert.Certificate
@@ -54,8 +54,12 @@ class Generator implements FileUtil {
         keystore.load(null, keystorePassword)
         def keyGen = new CertAndKeyGen('RSA', 'SHA1WithRSA', null)
         keyGen.generate(1024)
+        CertificateExtensions certificateExtensions = getCertExtensions()
         def cert = keyGen.getSelfCertificate(new X500Name('CN=ROOT'),
-                                             (long) 365 * 24 * 3600)
+                                             new Date(),
+                                             // 20 years
+                                             (long) 20 * 365 * 24 * 3600,
+                                             certificateExtensions)
         Certificate[] chain = [cert]
         keystore.setKeyEntry('selfsigned',
                              keyGen.privateKey,
@@ -64,6 +68,17 @@ class Generator implements FileUtil {
         def stream = keystoreFile.newOutputStream()
         keystore.store(stream, keystorePassword)
         stream.close()
+    }
+
+    // Chrome no longer accepts certs without a subject name
+    private static CertificateExtensions getCertExtensions() {
+        def certificateExtensions = new CertificateExtensions()
+        def names = new GeneralNames()
+        names.add(new GeneralName(new DNSName('localhost')))
+        def extension = new SubjectAlternativeNameExtension(names)
+        certificateExtensions.set(SubjectAlternativeNameExtension.NAME,
+                                  extension)
+        certificateExtensions
     }
 
     private static void setupGlobalConfig(File appDirectory,
