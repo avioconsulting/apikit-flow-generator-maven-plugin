@@ -19,6 +19,10 @@ class Generator implements FileUtil {
         def flowFileName = FileUtils.basename(ramlPath) + 'xml'
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
+        fixHttpListenerConfigs(flowPath)
+    }
+
+    private static void fixHttpListenerConfigs(File flowPath) {
         def xmlParser = new XmlParser(false, true)
         def flowNode = xmlParser.parse(flowPath)
         def httpListenerConfig = flowNode[http.'listener-config']
