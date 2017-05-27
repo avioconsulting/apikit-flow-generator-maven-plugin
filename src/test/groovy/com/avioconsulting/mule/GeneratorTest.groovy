@@ -286,29 +286,4 @@ class GeneratorTest implements FileUtil {
         assertThat keystorePath.readBytes(),
                    is(equalTo(existingKeystoreBits))
     }
-
-    @Test
-    void apiAutoDiscovery() {
-        // arrange
-
-        // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1')
-
-        // assert
-        def xmlPath = 'global.xml'
-        def xmlNode = getXmlNode(xmlPath)
-        def autoDiscoveryNode = xmlNode[autoDiscovery.'api'][0] as Node
-        assert autoDiscoveryNode
-        assertThat autoDiscoveryNode.@apiName,
-                   is(equalTo('${api.autodiscovery.name}'))
-        assertThat autoDiscoveryNode.@version,
-                   is(equalTo('v1'))
-        assertThat autoDiscoveryNode.@flowRef,
-                   is(equalTo('api-stuff-v1-main'))
-        assertThat autoDiscoveryNode.@apikitRef,
-                   is(equalTo('api-stuff-v1-config'))
-    }
 }

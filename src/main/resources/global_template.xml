@@ -3,12 +3,10 @@
       xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-      xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
-http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd">
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
     <http:listener-config name="global-http-listener-config"
                           host="0.0.0.0"
                           port="${http.port}"
@@ -26,11 +24,4 @@ http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/sche
                            password="${listener.keystore.password}"/>
         </tls:context>
     </http:listener-config>
-    <!-- deal with API Manager's lack of environment specific API Definitions -->
-    <api-platform-gw:api apiName="${api.autodiscovery.name}"
-                         version="theVersion"
-                         flowRef="theFlowRed"
-                         create="false"
-                         apikitRef="theRef"
-                         doc:name="API Autodiscovery"/>
 </mule>
