@@ -26,7 +26,8 @@ http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/sche
                            password="${listener.keystore.password}"/>
         </tls:context>
     </http:listener-config>
-    <api-platform-gw:api apiName="theApiName"
+    <!-- deal with API Manager's lack of environment specific API Definitions -->
+    <api-platform-gw:api apiName="${api.autodiscovery.name}"
                          version="theVersion"
                          flowRef="theFlowRed"
                          create="false"

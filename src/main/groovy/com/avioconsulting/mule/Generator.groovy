@@ -102,8 +102,6 @@ class Generator implements FileUtil {
     private static void setupAutoDiscovery(Node xmlNode, String apiName, String apiVersion, String baseName) {
         def autoDiscoveryNode = xmlNode[autoDiscovery.'api'][0] as Node
         assert autoDiscoveryNode
-        // deal with API Manager's lack of environment specific API Definitions
-        autoDiscoveryNode.@apiName = "${apiName}\${api.env.suffix}"
         autoDiscoveryNode.@version = apiVersion
         // the naming convention auto discovery uses
         autoDiscoveryNode.@flowRef = "${baseName}-main"
