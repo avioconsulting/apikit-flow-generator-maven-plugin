@@ -26,14 +26,20 @@ repositories {
     jcenter()
 }
 
-File scaffoldDependency = zipTree('/Applications/AnypointStudio.app/Contents/Eclipse/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar').find { File file ->
-    file.absolutePath.endsWith('apikit-scaffolder.jar')
+def getScaffolder = {
+    zipTree(
+            '/Applications/AnypointStudio.app/Contents/Eclipse/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar').find { File file ->
+        file.absolutePath.endsWith('apikit-scaffolder.jar')
+    }
 }
 
-assert scaffoldDependency.exists()
+// clean removes the expanded file, so bring it back
+clean.doLast {
+    getScaffolder()
+}
 
 dependencies {
-    compile files(scaffoldDependency.absolutePath)
+    compile files(getScaffolder().absolutePath)
     // from the scaffolder POM
     runtime group: 'org.jdom', name: 'jdom2', version: '2.0.5'
     runtime 'org.mule.raml:parser-interface-impl-v1:3.8.4'
