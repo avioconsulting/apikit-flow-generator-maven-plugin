@@ -35,6 +35,8 @@ repositories {
     }
 }
 
+// this is inside an OSGI bundle that's only installed with Studio
+// need to get the JAR from inside
 def getScaffolder = {
     zipTree(
             '/Applications/AnypointStudio.app/Contents/Eclipse/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar').find {
