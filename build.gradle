@@ -3,6 +3,7 @@ version '1.0-SNAPSHOT'
 
 configurations {
     provided
+    bundled
 }
 
 apply plugin: 'java'
@@ -11,9 +12,11 @@ apply plugin: 'groovy'
 sourceSets {
     main {
         compileClasspath += configurations.provided
+        compileClasspath += configurations.bundled
     }
     test {
         compileClasspath += configurations.provided
+        compileClasspath += configurations.bundled
         runtimeClasspath += configurations.provided
     }
 }
@@ -28,8 +31,9 @@ repositories {
 
 def getScaffolder = {
     zipTree(
-            '/Applications/AnypointStudio.app/Contents/Eclipse/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar').find { File file ->
-        file.absolutePath.endsWith('apikit-scaffolder.jar')
+            '/Applications/AnypointStudio.app/Contents/Eclipse/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar').find {
+        File file ->
+            file.absolutePath.endsWith('apikit-scaffolder.jar')
     }
 }
 
@@ -39,7 +43,7 @@ clean.doLast {
 }
 
 dependencies {
-    compile files(getScaffolder().absolutePath)
+    bundled files(getScaffolder().absolutePath)
     // from the scaffolder POM
     runtime group: 'org.jdom', name: 'jdom2', version: '2.0.5'
     runtime 'org.mule.raml:parser-interface-impl-v1:3.8.4'
@@ -53,4 +57,10 @@ dependencies {
     provided 'org.apache.maven:maven-plugin-api:3.3.9'
     compile 'org.codehaus.groovy:groovy-all:2.4.6'
     testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+jar {
+    from {
+        configurations.bundled.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
