@@ -5,9 +5,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
@@ -15,6 +13,7 @@ class GeneratorTest implements FileUtil {
     private File tempDir, appDir
     private static Namespace http = Generator.http
     private static Namespace tls = Generator.tls
+    public static final Namespace autoDiscovery = Generator.autoDiscovery
 
     @Before
     void setup() {
@@ -44,7 +43,10 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -57,7 +59,10 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -70,7 +75,10 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         def props = new Properties()
@@ -90,7 +98,10 @@ class GeneratorTest implements FileUtil {
         props.store(propsPath.newOutputStream(), 'Foo')
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         props = new Properties()
@@ -107,10 +118,16 @@ class GeneratorTest implements FileUtil {
         def propsPath = join(appDir, 'mule-deploy.properties')
         props.put('config.resources', 'existing.xml')
         props.store(propsPath.newOutputStream(), 'Foo')
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         props = new Properties()
@@ -124,7 +141,10 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         def xmlNode = getXmlNode('global.xml')
@@ -140,7 +160,10 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         def xmlPath = 'global.xml'
@@ -174,12 +197,18 @@ class GeneratorTest implements FileUtil {
     @Test
     void globalXmlAlreadyExists() {
         // arrange
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
         def globalXmlPath = join appDir, 'global.xml'
         globalXmlPath.write "${globalXmlPath.text} <!-- foo -->"
 
         // act
-        Generator.generate(tempDir, 'api-stuff-v1.raml')
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
         assertThat globalXmlPath.text,
@@ -201,8 +230,23 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
 
         // assert
-        fail 'write this'
+        def xmlPath = 'global.xml'
+        def xmlNode = getXmlNode(xmlPath)
+        def autoDiscoveryNode = xmlNode[autoDiscovery.'api'][0] as Node
+        assert autoDiscoveryNode
+        assertThat autoDiscoveryNode.@apiName,
+                   is(equalTo('stuff'))
+        assertThat autoDiscoveryNode.@version,
+                   is(equalTo('v1'))
+        assertThat autoDiscoveryNode.@flowRef,
+                   is(equalTo('api-stuff-v1-main'))
+        assertThat autoDiscoveryNode.@apikitRef,
+                   is(equalTo('api-stuff-v1-config'))
     }
 }

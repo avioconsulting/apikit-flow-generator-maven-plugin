@@ -9,9 +9,12 @@ class Generator implements FileUtil {
     private static final xmlParser = new XmlParser(false, true)
     public static final Namespace http = new Namespace('http://www.mulesoft.org/schema/mule/http')
     public static final Namespace tls = new Namespace('http://www.mulesoft.org/schema/mule/tls')
+    public static final Namespace autoDiscovery = new Namespace('http://www.mulesoft.org/schema/mule/api-platform-gw')
 
     static generate(File baseDirectory,
-                    String ramlPath) {
+                    String ramlPath,
+                    String apiName,
+                    String apiVersion) {
         def apiBuilder = new ScaffolderAPI()
         def mainDir = join(baseDirectory, 'src', 'main')
         def ramlFile = join(mainDir, 'api', ramlPath)
@@ -39,13 +42,13 @@ class Generator implements FileUtil {
         IOUtils.copy(input, stream)
         stream.close()
         def xmlNode = xmlParser.parse(globalXmlPath)
-        Node httpListener = xmlNode[http.'listener-config'].find { Node n ->
+        def httpListener = xmlNode[http.'listener-config'].find { Node n ->
             n.'@name' == 'http_replace_me'
-        }
+        } as Node
         httpListener.@name = "${baseName}-httpListenerConfig"
-        Node httpsListener = xmlNode[http.'listener-config'].find { Node n ->
+        def httpsListener = xmlNode[http.'listener-config'].find { Node n ->
             n.'@name' == 'https_replace_me'
-        }
+        } as Node
         httpsListener.@name = "${baseName}-httpsListenerConfig"
         new XmlNodePrinter(new IndentPrinter(new FileWriter(globalXmlPath))).print xmlNode
     }
