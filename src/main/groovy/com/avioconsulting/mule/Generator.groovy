@@ -32,6 +32,7 @@ class Generator implements FileUtil {
         def httpsListenerConfig = flowNode.appendNode(http.'listener-config')
         httpsListenerConfig.@protocol = 'HTTPS'
         httpsListenerConfig.'@port' = '${https.port}'
+        httpsListenerConfig.'@host' = '0.0.0.0'
         httpsListenerConfig.@name = existingConfigName.replace('httpListenerConfig',
                                                                'httpsListenerConfig')
         new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode

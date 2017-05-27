@@ -81,7 +81,9 @@ class GeneratorTest implements FileUtil {
                    is(equalTo('api-stuff-v1-httpsListenerConfig'))
         assertThat httpsListenerConfig.@port,
                    is(equalTo('${https.port}'))
-        fail 'doc:name, host, keystore'
+        assertThat httpsListenerConfig.@host,
+                   is(equalTo('0.0.0.0'))
+        fail 'keystore'
     }
 
     @Test
