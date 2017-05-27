@@ -27,7 +27,7 @@ class Generator implements FileUtil {
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
         updateMuleDeployProperties(appDirectory)
-        removeHttpListenerConfig(flowPath)
+        alterGeneratedFlow(flowPath)
         setupGlobalConfig(appDirectory,
                           baseName,
                           apiName,
@@ -75,13 +75,26 @@ class Generator implements FileUtil {
         httpsListener.@name = "${baseName}-httpsListenerConfig"
     }
 
-    private static void removeHttpListenerConfig(File flowPath) {
+    private static void alterGeneratedFlow(File flowPath) {
         def flowNode = xmlParser.parse(flowPath)
+        removeHttpListenerConfigs(flowNode)
+        parameterizeHttpListeners(flowNode)
+        new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
+    }
+
+    private static void parameterizeHttpListeners(Node flowNode) {
+        def listeners = flowNode.flow[http.listener] as NodeList
+        listeners.each { listener ->
+            // supplied via properties to allow HTTP vs. HTTPS toggle
+            listener.'@config-ref' = '${http.listener.config}'
+        }
+    }
+
+    private static void removeHttpListenerConfigs(Node flowNode) {
         NodeList httpListenerConfigs = flowNode[http.'listener-config']
         httpListenerConfigs.each { config ->
             flowNode.remove(config)
         }
-        new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 
     private static void updateMuleDeployProperties(File appDirectory) {

@@ -71,6 +71,24 @@ class GeneratorTest implements FileUtil {
     }
 
     @Test
+    void parameterizesListeners() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def listeners = xmlNode.flow[http.listener].'@config-ref'
+        assertThat listeners,
+                   is(equalTo(['${http.listener.config}',
+                               '${http.listener.config}']))
+    }
+
+    @Test
     void generatesMuleDeployProperties() {
         // arrange
 
