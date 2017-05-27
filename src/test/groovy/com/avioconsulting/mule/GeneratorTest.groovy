@@ -4,7 +4,8 @@ import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
@@ -28,19 +29,36 @@ class GeneratorTest implements FileUtil {
         FileUtils.copyFileToDirectory(sourceFile, apiDir)
     }
 
+    def getXmlNode(String xmlPath) {
+        def xmlFile = join appDir, xmlPath
+        assert xmlFile.exists()
+        new XmlParser().parse(xmlFile)
+    }
+
     @Test
     void generates_Flow() {
         // arrange
-
 
         // act
         Generator.generate(tempDir, 'api-stuff-v1.raml')
 
         // assert
-        def xmlFile = join appDir, 'api-stuff-v1.xml'
-        assert xmlFile.exists()
-        def xmlNode = new XmlParser().parse(xmlFile)
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void updatesHttpPort() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir, 'api-stuff-v1.raml')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def httpListenerPort = xmlNode.'http:listener-config'[0].@port
+        assertThat httpListenerPort,
+                   is(equalTo('${http.port}'))
     }
 }
