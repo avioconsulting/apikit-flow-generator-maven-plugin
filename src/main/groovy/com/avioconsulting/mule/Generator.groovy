@@ -6,6 +6,7 @@ import org.mule.tools.apikit.ScaffolderAPI
 
 class Generator implements FileUtil {
     public static final Namespace http = new Namespace('http://www.mulesoft.org/schema/mule/http')
+    public static final Namespace tls = new Namespace('http://www.mulesoft.org/schema/mule/tls')
 
     static generate(File baseDirectory,
                     String ramlPath) {
@@ -29,12 +30,19 @@ class Generator implements FileUtil {
         // Can be populated via a property this way
         httpListenerConfig.'@port' = '${http.port}'
         String existingConfigName = httpListenerConfig.@name
-        def httpsListenerConfig = flowNode.appendNode(http.'listener-config')
+        Node httpsListenerConfig = flowNode.appendNode(http.'listener-config')
         httpsListenerConfig.@protocol = 'HTTPS'
         httpsListenerConfig.'@port' = '${https.port}'
         httpsListenerConfig.'@host' = '0.0.0.0'
         httpsListenerConfig.@name = existingConfigName.replace('httpListenerConfig',
                                                                'httpsListenerConfig')
+        def tlsContext = httpsListenerConfig.appendNode(tls.'context')
+        def tlsKeystore = tlsContext.appendNode(tls.'key-store')
+        tlsKeystore.'@type' = 'jks'
+        tlsKeystore.'@path' = 'keystores/listener_keystore.jks'
+        tlsKeystore.'@alias' = 'selfsigned'
+        tlsKeystore.'@keyPassword' = 'changeit'
+        tlsKeystore.'@password' = 'changeit'
         new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 }

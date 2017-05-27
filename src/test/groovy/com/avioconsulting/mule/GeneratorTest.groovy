@@ -13,6 +13,7 @@ import static org.junit.Assert.assertThat
 class GeneratorTest implements FileUtil {
     private File tempDir, appDir
     private static Namespace http = Generator.http
+    private static Namespace tls = Generator.tls
 
     @Before
     void setup() {
@@ -83,7 +84,20 @@ class GeneratorTest implements FileUtil {
                    is(equalTo('${https.port}'))
         assertThat httpsListenerConfig.@host,
                    is(equalTo('0.0.0.0'))
-        fail 'keystore'
+        def tlsContext = httpsListenerConfig[tls.'context'][0]
+        assert tlsContext
+        def tlsKeystore = tlsContext[tls.'key-store'][0]
+        assert tlsKeystore
+        assertThat tlsKeystore.@type,
+                   is(equalTo('jks'))
+        assertThat tlsKeystore.@path,
+                   is(equalTo('keystores/listener_keystore.jks'))
+        assertThat tlsKeystore.@alias,
+                   is(equalTo('selfsigned'))
+        assertThat tlsKeystore.@keyPassword,
+                   is(equalTo('changeit'))
+        assertThat tlsKeystore.@password,
+                   is(equalTo('changeit'))
     }
 
     @Test
