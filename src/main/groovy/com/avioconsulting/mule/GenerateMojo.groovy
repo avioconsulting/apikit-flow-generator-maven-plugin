@@ -32,6 +32,6 @@ class GenerateMojo extends AbstractMojo {
                            apiName,
                            apiVersion,
                            useCloudHub,
-                           mavenProject.name)
+                           mavenProject.artifactId)
     }
 }
