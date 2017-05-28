@@ -1,6 +1,7 @@
 package com.avioconsulting.mule
 
 import groovy.xml.Namespace
+import groovy.xml.QName
 import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
@@ -14,6 +15,9 @@ class GeneratorTest implements FileUtil {
     private static Namespace http = new Namespace(Generator.http.URI)
     public static final Namespace apiKit = new Namespace(Generator.apiKit.URI)
     public static final Namespace xsi = new Namespace(Generator.xsi.URI)
+    public static final Namespace scripting = new Namespace(Generator.scripting.URI)
+    public static final Namespace doc = new Namespace(Generator.doc.URI)
+    public static final Namespace json = new Namespace(Generator.json.URI)
 
     @Before
     void setup() {
@@ -229,5 +233,70 @@ class GeneratorTest implements FileUtil {
                            'http://www.mulesoft.org/schema/mule/scripting',
                            'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
                    ]))
+    }
+
+    def getChildNodeNames(Node node) {
+        node.children()
+                .collect { Node n -> n.name() as QName }
+                .collect { name -> name.localPart }
+    }
+
+    @Test
+    void changesBadRequestFlow() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22',
+                           false,
+                           'theProject')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def badRequestNode = xmlNode[apiKit.'mapping-exception-strategy'][apiKit.'mapping'].find { Node node ->
+            node.'@statusCode' == '400'
+        } as Node
+        assert badRequestNode
+        assertThat getChildNodeNames(badRequestNode),
+                   is(equalTo([
+                           'exception',
+                           'set-property',
+                           'choice'
+                   ]))
+        def choice = badRequestNode.choice[0]
+        assert choice
+        def choiceWhen = choice.when[0] as Node
+        assert choiceWhen
+        assertThat choiceWhen.'@expression',
+                   is(equalTo('${return.validation.failures}'))
+        assertThat getChildNodeNames(choiceWhen),
+                   is(equalTo([
+                           'transformer',
+                           'object-to-json-transformer'
+                   ]))
+        def scriptTransformer = choiceWhen[scripting.'transformer'][0] as Node
+        assert scriptTransformer
+        assertThat scriptTransformer.attribute(doc.name),
+                   is(equalTo('Error Message Map'))
+        def script = scriptTransformer[scripting.'script'][0] as Node
+        assert script
+        assertThat script.'@engine',
+                   is(equalTo('Groovy'))
+        assertThat script.value()[0],
+                   is(equalTo('[error_details: exception.message]'))
+        def json = choiceWhen[json.'object-to-json-transformer'][0] as Node
+        assert json
+        assertThat json.attribute(doc.name),
+                   is(equalTo('Map to JSON'))
+        def otherwise = choice.otherwise[0] as Node
+        assert otherwise
+        def payload = otherwise['set-payload'][0] as Node
+        assert payload
+        assertThat payload['@value'],
+                   is(containsString('Bad request'))
+        assertThat payload.attribute(doc.name),
+                   is(equalTo('Obfuscate error'))
     }
 }

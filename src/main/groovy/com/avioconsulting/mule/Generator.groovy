@@ -1,6 +1,7 @@
 package com.avioconsulting.mule
 
 import org.codehaus.plexus.util.FileUtils
+import org.jdom2.CDATA
 import org.jdom2.Element
 import org.jdom2.Namespace
 import org.jdom2.input.SAXBuilder
@@ -10,10 +11,20 @@ import org.mule.tools.apikit.ScaffolderAPI
 
 class Generator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
-    public static final Namespace http = Namespace.getNamespace('http', 'http://www.mulesoft.org/schema/mule/http')
+    public static final Namespace http = Namespace.getNamespace('http',
+                                                                'http://www.mulesoft.org/schema/mule/http')
     public static final Namespace apiKit = Namespace.getNamespace('apikit',
                                                                   'http://www.mulesoft.org/schema/mule/apikit')
-    public static final Namespace xsi = Namespace.getNamespace('xsi', 'http://www.w3.org/2001/XMLSchema-instance')
+    public static final Namespace xsi = Namespace.getNamespace('xsi',
+                                                               'http://www.w3.org/2001/XMLSchema-instance')
+    public static final Namespace scripting = Namespace.getNamespace('scripting',
+                                                                     'http://www.mulesoft.org/schema/mule/scripting')
+
+    public static final Namespace doc = Namespace.getNamespace('doc',
+                                                               'http://www.mulesoft.org/schema/mule/documentation')
+
+    public static final Namespace json = Namespace.getNamespace('json',
+                                                               'http://www.mulesoft.org/schema/mule/json')
 
     static generate(File baseDirectory,
                     String ramlPath,
@@ -66,6 +77,12 @@ class Generator implements FileUtil {
                             apiName,
                             apiVersion)
         parameterizeApiKitConfig(rootElement)
+        addChoiceRouting(rootElement)
+        def outputter = new XMLOutputter(Format.prettyFormat)
+        outputter.output(document, new FileWriter(flowPath))
+    }
+
+    private static void addChoiceRouting(Element rootElement) {
         def schemaLocation = rootElement.getAttribute('schemaLocation', xsi)
         def existingSchemaLocations = schemaLocation.value.split(' ')
         existingSchemaLocations += [
@@ -75,8 +92,39 @@ class Generator implements FileUtil {
                 'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
         ]
         schemaLocation.value = existingSchemaLocations.join(' ')
-        def outputter = new XMLOutputter(Format.prettyFormat)
-        outputter.output(document, new FileWriter(flowPath))
+        def mappingStrategy = rootElement.getChild('mapping-exception-strategy', apiKit)
+        assert mappingStrategy
+        def badRequestMapping = mappingStrategy.getChildren('mapping', apiKit).find { node ->
+            node.getAttribute('statusCode').value == '400'
+        }
+        assert badRequestMapping
+        def badRequestPayload = badRequestMapping.getChild('set-payload', core)
+        badRequestMapping.removeContent(badRequestPayload)
+        def choiceElement = new Element('choice', core)
+        badRequestMapping.addContent(choiceElement)
+        def whenElement = new Element('when', core)
+        choiceElement.addContent(whenElement)
+        whenElement.setAttribute('expression', '${return.validation.failures}')
+        def scriptingTransformer = new Element('transformer', scripting)
+        whenElement.addContent(scriptingTransformer)
+        scriptingTransformer.setAttribute('name',
+                                          'Error Message Map',
+                                          doc)
+        def script = new Element('script', scripting)
+        scriptingTransformer.addContent(script)
+        script.setAttribute('engine', 'Groovy')
+        script.addContent(new CDATA('[error_details: exception.message]'))
+        def json = new Element('object-to-json-transformer', json)
+        whenElement.addContent(json)
+        json.setAttribute('name',
+                          'Map to JSON',
+                          doc)
+        def otherwise = new Element('otherwise', core)
+        choiceElement.addContent(otherwise)
+        otherwise.addContent(badRequestPayload)
+        badRequestPayload.setAttribute('name',
+                                       'Obfuscate error',
+                                       doc)
     }
 
     private static boolean removeHttpListenerConfigs(Element rootElement) {
