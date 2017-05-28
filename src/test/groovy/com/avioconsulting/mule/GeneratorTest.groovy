@@ -299,4 +299,47 @@ class GeneratorTest implements FileUtil {
         assertThat payload.attribute(doc.name),
                    is(equalTo('Obfuscate error'))
     }
+
+    @Test
+    void disablesApiKitConsole() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1',
+                           false,
+                           'theProject')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def flowNode = xmlNode.flow.find { Node node ->
+            node.'@name' == 'api-stuff-v1-console'
+        }
+        assert flowNode
+        assertThat getChildNodeNames(flowNode),
+                   is(equalTo([
+                           'listener',
+                           'choice'
+                   ]))
+        def choice = flowNode.choice[0]
+        assert choice
+        def choiceWhen = choice.when[0] as Node
+        assert choiceWhen
+        assertThat choiceWhen.'@expression',
+                   is(equalTo('${enable.apikit.console}'))
+        assertThat getChildNodeNames(choiceWhen),
+                   is(equalTo([
+                           'console'
+                   ]))
+        def otherwise = choice.otherwise[0] as Node
+        assert otherwise
+        def payload = otherwise['set-payload'][0] as Node
+        assert payload
+        assertThat payload['@value'],
+                   is(containsString('Resource not found'))
+        assertThat payload.attribute(doc.name),
+                   is(equalTo('Error message to caller'))
+    }
 }

@@ -77,12 +77,16 @@ class Generator implements FileUtil {
                             apiName,
                             apiVersion)
         parameterizeApiKitConfig(rootElement)
-        addChoiceRouting(rootElement)
+        addChoiceRouting(rootElement,
+                         apiName,
+                         apiVersion)
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document, new FileWriter(flowPath))
     }
 
-    private static void addChoiceRouting(Element rootElement) {
+    private static void addChoiceRouting(Element rootElement,
+                                         String apiName,
+                                         String apiVersion) {
         def schemaLocation = rootElement.getAttribute('schemaLocation', xsi)
         def existingSchemaLocations = schemaLocation.value.split(' ')
         existingSchemaLocations += [
@@ -93,6 +97,23 @@ class Generator implements FileUtil {
         ]
         schemaLocation.value = existingSchemaLocations.join(' ')
         allowDetailedValidationInfo(rootElement)
+        def lookFor = "api-${apiName}-${apiVersion}-console"
+        def consoleFlow = rootElement.getChildren('flow', core).find { element ->
+            element.getAttribute('name').value == lookFor
+        }
+        assert consoleFlow
+        def consoleElement = consoleFlow.getChild('console', apiKit)
+        consoleFlow.removeContent(consoleElement)
+        setupChoice(consoleFlow,
+                    '${enable.apikit.console}') { Element when, Element otherwise ->
+            when.addContent(consoleElement)
+            def payload = new Element('set-payload', core)
+            otherwise.addContent(payload)
+            payload.setAttribute('value', 'Resource not found')
+            payload.setAttribute('name',
+                                 'Error message to caller',
+                                 doc)
+        }
     }
 
     private static void allowDetailedValidationInfo(Element rootElement) {
