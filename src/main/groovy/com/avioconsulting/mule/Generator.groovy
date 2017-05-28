@@ -57,11 +57,15 @@ class Generator implements FileUtil {
         modifyHttpListeners(flowNode,
                             apiName,
                             apiVersion)
+        parameterizeApiKitConfig(flowNode)
+        new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
+    }
+
+    private static void parameterizeApiKitConfig(Node flowNode) {
         def apiKitConfig = flowNode[apiKit.'config'][0]
         assert apiKitConfig
         // allow projects to control this via properties
         apiKitConfig.@disableValidations = '${skip.apikit.validation}'
-        new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 
     private static void modifyHttpListeners(Node flowNode,
