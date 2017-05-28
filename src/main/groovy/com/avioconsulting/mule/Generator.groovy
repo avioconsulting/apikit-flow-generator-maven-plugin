@@ -92,6 +92,10 @@ class Generator implements FileUtil {
                 'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
         ]
         schemaLocation.value = existingSchemaLocations.join(' ')
+        allowDetailedValidationInfo(rootElement)
+    }
+
+    private static void allowDetailedValidationInfo(Element rootElement) {
         def mappingStrategy = rootElement.getChild('mapping-exception-strategy', apiKit)
         assert mappingStrategy
         def badRequestMapping = mappingStrategy.getChildren('mapping', apiKit).find { node ->
