@@ -24,7 +24,7 @@ class Generator implements FileUtil {
                                                                'http://www.mulesoft.org/schema/mule/documentation')
 
     public static final Namespace json = Namespace.getNamespace('json',
-                                                               'http://www.mulesoft.org/schema/mule/json')
+                                                                'http://www.mulesoft.org/schema/mule/json')
 
     static generate(File baseDirectory,
                     String ramlPath,
@@ -100,31 +100,41 @@ class Generator implements FileUtil {
         assert badRequestMapping
         def badRequestPayload = badRequestMapping.getChild('set-payload', core)
         badRequestMapping.removeContent(badRequestPayload)
+        setupChoice(badRequestMapping,
+                    '${return.validation.failures}') { Element when, Element otherwise ->
+            def scriptingTransformer = new Element('transformer', scripting)
+            when.addContent(scriptingTransformer)
+            scriptingTransformer.setAttribute('name',
+                                              'Error Message Map',
+                                              doc)
+            def script = new Element('script', scripting)
+            scriptingTransformer.addContent(script)
+            script.setAttribute('engine', 'Groovy')
+            script.addContent(new CDATA('[error_details: exception.message]'))
+            def json = new Element('object-to-json-transformer', json)
+            when.addContent(json)
+            json.setAttribute('name',
+                              'Map to JSON',
+                              doc)
+
+            otherwise.addContent(badRequestPayload)
+            badRequestPayload.setAttribute('name',
+                                           'Obfuscate error',
+                                           doc)
+        }
+    }
+
+    static def setupChoice(Element root,
+                           String expression,
+                           Closure closure) {
         def choiceElement = new Element('choice', core)
-        badRequestMapping.addContent(choiceElement)
+        root.addContent(choiceElement)
         def whenElement = new Element('when', core)
         choiceElement.addContent(whenElement)
-        whenElement.setAttribute('expression', '${return.validation.failures}')
-        def scriptingTransformer = new Element('transformer', scripting)
-        whenElement.addContent(scriptingTransformer)
-        scriptingTransformer.setAttribute('name',
-                                          'Error Message Map',
-                                          doc)
-        def script = new Element('script', scripting)
-        scriptingTransformer.addContent(script)
-        script.setAttribute('engine', 'Groovy')
-        script.addContent(new CDATA('[error_details: exception.message]'))
-        def json = new Element('object-to-json-transformer', json)
-        whenElement.addContent(json)
-        json.setAttribute('name',
-                          'Map to JSON',
-                          doc)
+        whenElement.setAttribute('expression', expression)
         def otherwise = new Element('otherwise', core)
         choiceElement.addContent(otherwise)
-        otherwise.addContent(badRequestPayload)
-        badRequestPayload.setAttribute('name',
-                                       'Obfuscate error',
-                                       doc)
+        closure(whenElement, otherwise)
     }
 
     private static boolean removeHttpListenerConfigs(Element rootElement) {
