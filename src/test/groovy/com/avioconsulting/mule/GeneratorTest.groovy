@@ -47,12 +47,39 @@ class GeneratorTest implements FileUtil {
                            'api-stuff-v1.raml',
                            'stuff',
                            'v1',
-                           false, 'theProject')
+                           false,
+                           'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void regenerates_Flow() {
+        // arrange
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1',
+                           false,
+                           'theProject')
+        def flowXmlFile = join(appDir, 'api-stuff-v1.xml')
+        assert flowXmlFile.exists()
+        def existingFlowXmlContents = flowXmlFile.text
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v1',
+                           false,
+                           'theProject')
+
+        // assert
+        assertThat flowXmlFile.text,
+                   is(equalTo(existingFlowXmlContents))
     }
 
     @Test

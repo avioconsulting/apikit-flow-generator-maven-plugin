@@ -27,17 +27,20 @@ class Generator implements FileUtil {
         def ramlFile = join(mainDir, 'api', ramlPath)
         assert ramlFile.exists()
         def appDirectory = join(mainDir, 'app')
+        def baseName = FileUtils.basename(ramlPath, '.raml')
+        def flowFileName = baseName + '.xml'
+        def flowFile = join(appDirectory, flowFileName)
+        if (flowFile.exists()) {
+            // utility works best with a clean file
+            if (!flowFile.delete()) {
+                assert flowFile.delete()
+            }
+        }
         apiBuilder.run([ramlFile],
                        appDirectory)
         if (useCloudHub) {
-            def ramlText = ramlFile.text
-            def baseUri = "https://${mavenProjectName}.cloudhub.io/${mavenProjectName}/api/{version}"
-            def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
-                                                "baseUri: ${baseUri}")
-            ramlFile.write fixedRaml
+            adjustRamlBaseUri(ramlFile, mavenProjectName)
         }
-        def baseName = FileUtils.basename(ramlPath, '.raml')
-        def flowFileName = baseName + '.xml'
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
         updateMuleDeployProperties(appDirectory)
@@ -46,6 +49,14 @@ class Generator implements FileUtil {
                            apiVersion)
         setupGlobalConfig(appDirectory)
         generateKeyStore(mainDir)
+    }
+
+    private static void adjustRamlBaseUri(File ramlFile, String mavenProjectName) {
+        def ramlText = ramlFile.text
+        def baseUri = "https://${mavenProjectName}.cloudhub.io/${mavenProjectName}/api/{version}"
+        def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
+                                            "baseUri: ${baseUri}")
+        ramlFile.write fixedRaml
     }
 
     private static void generateKeyStore(File mainDir) {
