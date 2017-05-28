@@ -7,8 +7,7 @@ import org.mule.tools.apikit.ScaffolderAPI
 class Generator implements FileUtil {
     private static final xmlParser = new XmlParser(false, true)
     public static final Namespace http = new Namespace('http://www.mulesoft.org/schema/mule/http')
-    public static final Namespace tls = new Namespace('http://www.mulesoft.org/schema/mule/tls')
-    public static final Namespace autoDiscovery = new Namespace('http://www.mulesoft.org/schema/mule/api-platform-gw')
+    public static final Namespace apiKit = new Namespace('http://www.mulesoft.org/schema/mule/apikit')
 
     static generate(File baseDirectory,
                     String ramlPath,
@@ -58,6 +57,10 @@ class Generator implements FileUtil {
         modifyHttpListeners(flowNode,
                             apiName,
                             apiVersion)
+        def apiKitConfig = flowNode[apiKit.'config'][0]
+        assert apiKitConfig
+        // allow projects to control this via properties
+        apiKitConfig.@disableValidations = '${skip.apikit.validation}'
         new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
     }
 

@@ -12,8 +12,7 @@ import static org.junit.Assert.assertThat
 class GeneratorTest implements FileUtil {
     private File tempDir, appDir, mainDir, apiDir
     private static Namespace http = Generator.http
-    private static Namespace tls = Generator.tls
-    public static final Namespace autoDiscovery = Generator.autoDiscovery
+    public static final Namespace apiKit = Generator.apiKit
 
     @Before
     void setup() {
@@ -175,5 +174,25 @@ class GeneratorTest implements FileUtil {
         def listeners = xmlNode.flow[http.listener].'@path'
         assertThat listeners,
                    is(equalTo(['/stuff/api/v22/*', '/stuff/console/v22/*']))
+    }
+
+    @Test
+    void apiKitConfig_Parameterized() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22',
+                           false,
+                           'theProject')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def apiKitConfig = xmlNode[apiKit.'config'][0]
+        assert apiKitConfig
+        assertThat apiKitConfig.'@disableValidations',
+                   is(equalTo('${skip.apikit.validation}'))
     }
 }
