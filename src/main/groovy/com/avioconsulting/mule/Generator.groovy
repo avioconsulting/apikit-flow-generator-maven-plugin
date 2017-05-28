@@ -1,13 +1,19 @@
 package com.avioconsulting.mule
 
-import groovy.xml.Namespace
 import org.codehaus.plexus.util.FileUtils
+import org.jdom2.Element
+import org.jdom2.Namespace
+import org.jdom2.input.SAXBuilder
+import org.jdom2.output.Format
+import org.jdom2.output.XMLOutputter
 import org.mule.tools.apikit.ScaffolderAPI
 
 class Generator implements FileUtil {
-    private static final xmlParser = new XmlParser(false, true)
-    public static final Namespace http = new Namespace('http://www.mulesoft.org/schema/mule/http')
-    public static final Namespace apiKit = new Namespace('http://www.mulesoft.org/schema/mule/apikit')
+    public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
+    public static final Namespace http = Namespace.getNamespace('http', 'http://www.mulesoft.org/schema/mule/http')
+    public static final Namespace apiKit = Namespace.getNamespace('apikit',
+                                                                  'http://www.mulesoft.org/schema/mule/apikit')
+    public static final Namespace xsi = Namespace.getNamespace('xsi', 'http://www.w3.org/2001/XMLSchema-instance')
 
     static generate(File baseDirectory,
                     String ramlPath,
@@ -52,43 +58,60 @@ class Generator implements FileUtil {
     private static void alterGeneratedFlow(File flowPath,
                                            String apiName,
                                            String apiVersion) {
-        def flowNode = xmlParser.parse(flowPath)
-        removeHttpListenerConfigs(flowNode)
-        modifyHttpListeners(flowNode,
+        def builder = new SAXBuilder()
+        def document = builder.build(flowPath)
+        def rootElement = document.rootElement
+        removeHttpListenerConfigs(rootElement)
+        modifyHttpListeners(rootElement,
                             apiName,
                             apiVersion)
-        parameterizeApiKitConfig(flowNode)
-        new XmlNodePrinter(new IndentPrinter(new FileWriter(flowPath))).print flowNode
+        parameterizeApiKitConfig(rootElement)
+        def schemaLocation = rootElement.getAttribute('schemaLocation', xsi)
+        def existingSchemaLocations = schemaLocation.value.split(' ')
+        existingSchemaLocations += [
+                'http://www.mulesoft.org/schema/mule/json',
+                'http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd',
+                'http://www.mulesoft.org/schema/mule/scripting',
+                'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
+        ]
+        schemaLocation.value = existingSchemaLocations.join(' ')
+        def outputter = new XMLOutputter(Format.prettyFormat)
+        outputter.output(document, new FileWriter(flowPath))
     }
 
-    private static void parameterizeApiKitConfig(Node flowNode) {
-        def apiKitConfig = flowNode[apiKit.'config'][0]
+    private static boolean removeHttpListenerConfigs(Element rootElement) {
+        rootElement.removeChildren('listener-config', http)
+    }
+
+    private static void parameterizeApiKitConfig(Element flowNode) {
+        def apiKitConfig = flowNode.getChild('config', apiKit)
         assert apiKitConfig
         // allow projects to control this via properties
-        apiKitConfig.@disableValidations = '${skip.apikit.validation}'
+        apiKitConfig.setAttribute('disableValidations',
+                                  '${skip.apikit.validation}')
     }
 
-    private static void modifyHttpListeners(Node flowNode,
+    private static void modifyHttpListeners(Element flowNode,
                                             String apiName,
                                             String apiVersion) {
-        def listeners = flowNode.flow[http.listener] as NodeList
-        listeners.each { listener ->
+        def listeners = flowNode.getChildren('flow', core)
+                .collect { flow ->
+            flow.getChildren('listener', http)
+        }.flatten()
+        listeners.each { Element listener ->
             // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
-            listener.'@config-ref' = '${http.listener.config}'
+            def configRefAttribute = listener.getAttribute('config-ref')
+            assert configRefAttribute
+            configRefAttribute.value = '${http.listener.config}'
             // want to be able to combine projects later, so be able to share a single listener config
             // by using paths
-            def isConsole = (listener.@path as String).contains('console')
+            def listenerPathAttribute = listener.getAttribute('path')
+            assert listenerPathAttribute
+            def isConsole = listenerPathAttribute.value.contains('console')
             def apiParts = [apiName]
             apiParts << (isConsole ? 'console' : 'api')
             apiParts += [apiVersion, '*']
-            listener.@path = '/' + apiParts.join('/')
-        }
-    }
-
-    private static void removeHttpListenerConfigs(Node flowNode) {
-        NodeList httpListenerConfigs = flowNode[http.'listener-config']
-        httpListenerConfigs.each { config ->
-            flowNode.remove(config)
+            listenerPathAttribute.value = '/' + apiParts.join('/')
         }
     }
 }

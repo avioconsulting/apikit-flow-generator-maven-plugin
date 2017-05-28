@@ -11,8 +11,9 @@ import static org.junit.Assert.assertThat
 @SuppressWarnings("GroovyAssignabilityCheck")
 class GeneratorTest implements FileUtil {
     private File tempDir, appDir, mainDir, apiDir
-    private static Namespace http = Generator.http
-    public static final Namespace apiKit = Generator.apiKit
+    private static Namespace http = new Namespace(Generator.http.URI)
+    public static final Namespace apiKit = new Namespace(Generator.apiKit.URI)
+    public static final Namespace xsi = new Namespace(Generator.xsi.URI)
 
     @Before
     void setup() {
@@ -34,7 +35,7 @@ class GeneratorTest implements FileUtil {
     Node getXmlNode(String xmlPath) {
         def xmlFile = join appDir, xmlPath
         assert xmlFile.exists()
-        new XmlParser().parse(xmlFile)
+        new XmlParser(false, true).parse(xmlFile)
     }
 
     @Test
@@ -194,5 +195,39 @@ class GeneratorTest implements FileUtil {
         assert apiKitConfig
         assertThat apiKitConfig.'@disableValidations',
                    is(equalTo('${skip.apikit.validation}'))
+    }
+
+    @Test
+    void addsSchemaLocations_For_Choice_Additions() {
+        // arrange
+
+        // act
+        Generator.generate(tempDir,
+                           'api-stuff-v1.raml',
+                           'stuff',
+                           'v22',
+                           false,
+                           'theProject')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def schemaLocations = xmlNode.attribute(xsi.schemaLocation)
+                .split(' ')
+                .collect { l -> l as String }
+        assertThat schemaLocations,
+                   is(equalTo([
+                           'http://www.mulesoft.org/schema/mule/core',
+                           'http://www.mulesoft.org/schema/mule/core/current/mule.xsd',
+                           'http://www.mulesoft.org/schema/mule/http',
+                           'http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd',
+                           'http://www.mulesoft.org/schema/mule/apikit',
+                           'http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd',
+                           'http://www.springframework.org/schema/beans',
+                           'http://www.springframework.org/schema/beans/spring-beans-3.1.xsd',
+                           'http://www.mulesoft.org/schema/mule/json',
+                           'http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd',
+                           'http://www.mulesoft.org/schema/mule/scripting',
+                           'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
+                   ]))
     }
 }
