@@ -172,13 +172,15 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22', false, 'theProject')
+                           'v1',
+                           false,
+                           'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         def listeners = xmlNode.flow[http.listener].'@path'
         assertThat listeners,
-                   is(equalTo(['/stuff/api/v22/*', '/stuff/console/v22/*']))
+                   is(equalTo(['/stuff/api/v1/*', '/stuff/console/v1/*']))
     }
 
     @Test
@@ -189,7 +191,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22',
+                           'v1',
                            false,
                            'theProject')
 
@@ -209,7 +211,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22',
+                           'v1',
                            false,
                            'theProject')
 
@@ -249,7 +251,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22',
+                           'v1',
                            false,
                            'theProject')
 
