@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
 class GeneratorTest implements FileUtil {
-    private File tempDir, appDir, mainDir
+    private File tempDir, appDir, mainDir, apiDir
     private static Namespace http = Generator.http
     private static Namespace tls = Generator.tls
     public static final Namespace autoDiscovery = Generator.autoDiscovery
@@ -26,7 +26,7 @@ class GeneratorTest implements FileUtil {
         mainDir.mkdirs()
         appDir = join mainDir, 'app'
         appDir.mkdirs()
-        def apiDir = join mainDir, 'api'
+        apiDir = join mainDir, 'api'
         apiDir.mkdirs()
         def sourceFile = join new File('src'), 'test', 'resources', 'api-stuff-v1.raml'
         FileUtils.copyFileToDirectory(sourceFile, apiDir)
@@ -46,12 +46,55 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void fixes_Raml_No() {
+        // arrange
+        def raml = 'api-stuff-v1.raml'
+        def ramlFile = join(apiDir, raml)
+        def origRamlText = ramlFile.text
+
+        // act
+        Generator.generate(tempDir,
+                           raml,
+                           'stuff',
+                           'v1',
+                           false,
+                           'theProject')
+
+        // assert
+        assertThat ramlFile.text,
+                   is(equalTo(origRamlText))
+    }
+
+    @Test
+    void fixes_Raml_Yes() {
+        // arrange
+        def raml = 'api-stuff-v1.raml'
+        def ramlFile = join(apiDir, raml)
+        def origRamlText = ramlFile.text
+
+        // act
+        Generator.generate(tempDir,
+                           raml,
+                           'stuff',
+                           'v1',
+                           true,
+                           'theProject')
+
+        // assert
+        assertThat ramlFile.text,
+                   is(not(equalTo(origRamlText)))
+        assertThat ramlFile.text,
+                   is(containsString('baseUri: https://theProject.cloudhub.io/theProject/api/{version}'))
     }
 
     @Test
@@ -62,7 +105,8 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -78,7 +122,8 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -96,7 +141,8 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         def props = new Properties()
@@ -119,7 +165,8 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         props = new Properties()
@@ -139,13 +186,15 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // act
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         props = new Properties()
@@ -162,7 +211,8 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1',
+                           false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('global.xml')
@@ -181,7 +231,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1', false, 'theProject')
 
         // assert
         def xmlPath = 'global.xml'
@@ -218,7 +268,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1', false, 'theProject')
         def globalXmlPath = join appDir, 'global.xml'
         globalXmlPath.write "${globalXmlPath.text} <!-- foo -->"
 
@@ -226,7 +276,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v1')
+                           'v1', false, 'theProject')
 
         // assert
         assertThat globalXmlPath.text,
@@ -241,7 +291,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22')
+                           'v22', false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -258,7 +308,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22')
+                           'v22', false, 'theProject')
 
         // assert
         assert join(mainDir, 'resources', 'keystores', 'listener_keystore.jks').exists()
@@ -270,7 +320,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22')
+                           'v22', false, 'theProject')
         def keystorePath = join(mainDir, 'resources', 'keystores', 'listener_keystore.jks')
         assert keystorePath.exists()
         def existingKeystoreBits = keystorePath.readBytes()
@@ -279,7 +329,7 @@ class GeneratorTest implements FileUtil {
         Generator.generate(tempDir,
                            'api-stuff-v1.raml',
                            'stuff',
-                           'v22')
+                           'v22', false, 'theProject')
 
         // assert
         assert keystorePath.exists()

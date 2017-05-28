@@ -19,7 +19,9 @@ class Generator implements FileUtil {
     static generate(File baseDirectory,
                     String ramlPath,
                     String apiName,
-                    String apiVersion) {
+                    String apiVersion,
+                    boolean useCloudHub,
+                    String mavenProjectName) {
         def apiBuilder = new ScaffolderAPI()
         def mainDir = join(baseDirectory, 'src', 'main')
         def ramlFile = join(mainDir, 'api', ramlPath)
@@ -27,6 +29,13 @@ class Generator implements FileUtil {
         def appDirectory = join(mainDir, 'app')
         apiBuilder.run([ramlFile],
                        appDirectory)
+        if (useCloudHub) {
+            def ramlText = ramlFile.text
+            def baseUri = "https://${mavenProjectName}.cloudhub.io/${mavenProjectName}/api/{version}"
+            def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
+                                                "baseUri: ${baseUri}")
+            ramlFile.write fixedRaml
+        }
         def baseName = FileUtils.basename(ramlPath, '.raml')
         def flowFileName = baseName + '.xml'
         def flowPath = new File(appDirectory, flowFileName)
