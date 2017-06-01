@@ -13,8 +13,8 @@ class GenerateMojo extends AbstractMojo {
     @Parameter(property = 'api.name')
     private String apiName
 
-    @Parameter(property = 'api.version')
-    private String apiVersion
+    @Parameter(property = 'api.current.version')
+    private String currentApiVersion
 
     @Parameter(property = 'raml.path', defaultValue = 'api-${api.name}-${api.version}.raml')
     private String ramlPath
@@ -30,7 +30,7 @@ class GenerateMojo extends AbstractMojo {
         Generator.generate(mavenProject.basedir,
                            ramlPath,
                            apiName,
-                           apiVersion,
+                           currentApiVersion,
                            useCloudHub,
                            mavenProject.artifactId)
     }
