@@ -125,7 +125,7 @@ class GeneratorTest implements FileUtil {
         assertThat ramlFile.text,
                    is(not(equalTo(origRamlText)))
         assertThat ramlFile.text,
-                   is(containsString('baseUri: https://theProject.cloudhub.io/theProject/api/{version}'))
+                   is(containsString('baseUri: https://theProject.cloudhub.io/stuff/api/{version}'))
     }
 
     @Test

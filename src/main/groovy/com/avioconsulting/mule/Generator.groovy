@@ -49,7 +49,9 @@ class Generator implements FileUtil {
         apiBuilder.run([ramlFile],
                        appDirectory)
         if (useCloudHub) {
-            adjustRamlBaseUri(ramlFile, mavenProjectName)
+            adjustRamlBaseUri(ramlFile,
+                              apiName,
+                              mavenProjectName)
         }
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
@@ -58,9 +60,11 @@ class Generator implements FileUtil {
                            apiVersion)
     }
 
-    private static void adjustRamlBaseUri(File ramlFile, String mavenProjectName) {
+    private static void adjustRamlBaseUri(File ramlFile,
+                                          String apiName,
+                                          String mavenProjectName) {
         def ramlText = ramlFile.text
-        def baseUri = "https://${mavenProjectName}.cloudhub.io/${mavenProjectName}/api/{version}"
+        def baseUri = "https://${mavenProjectName}.cloudhub.io/${apiName}/api/{version}"
         def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
                                             "baseUri: ${baseUri}")
         ramlFile.write fixedRaml
