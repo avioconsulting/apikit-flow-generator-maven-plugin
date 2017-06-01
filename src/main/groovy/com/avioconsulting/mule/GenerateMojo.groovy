@@ -16,7 +16,7 @@ class GenerateMojo extends AbstractMojo {
     @Parameter(property = 'api.current.version')
     private String currentApiVersion
 
-    @Parameter(property = 'raml.path', defaultValue = 'api-${api.name}-${api.version}.raml')
+    @Parameter(property = 'raml.path', defaultValue = 'api-${api.name}-${api.current.version}.raml')
     private String ramlPath
 
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
