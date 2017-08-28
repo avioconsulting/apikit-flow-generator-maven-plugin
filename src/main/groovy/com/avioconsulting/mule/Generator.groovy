@@ -9,6 +9,8 @@ import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
 import org.mule.tools.apikit.ScaffolderAPI
 
+import java.nio.file.Files
+
 class Generator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
     public static final Namespace http = Namespace.getNamespace('http',
@@ -43,6 +45,9 @@ class Generator implements FileUtil {
         if (flowFile.exists()) {
             // utility works best with a clean file
             if (!flowFile.delete()) {
+                // Windows
+                System.gc()
+                Thread.yield()
                 assert flowFile.delete()
             }
         }
