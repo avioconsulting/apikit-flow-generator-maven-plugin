@@ -1,7 +1,8 @@
 import groovy.xml.XmlUtil
+import org.apache.tools.ant.taskdefs.condition.Os
 
 group 'com.avioconsulting.mule'
-version '6.2.5-SNAPSHOT'
+version '6.2.5.1'
 
 configurations {
     provided
@@ -21,6 +22,7 @@ sourceSets {
         compileClasspath += configurations.provided
         compileClasspath += configurations.bundled
         runtimeClasspath += configurations.provided
+        runtimeClasspath += configurations.bundled
     }
 }
 
@@ -50,7 +52,7 @@ repositories {
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: 'https://devops.avioconsulting.com/nexus/repository/avio-snapshots/') {
+            repository(url: 'https://devops.avioconsulting.com/nexus/repository/avio-releases/') {
                 authentication userName: eeCreds.user,
                                password: eeCreds.password
             }
@@ -61,10 +63,15 @@ uploadArchives {
 // this is inside an OSGI bundle that's only installed with Studio
 // need to get the JAR from inside
 def getScaffolder = {
-    zipTree(
-            '/Applications/AnypointStudio.app/Contents/Eclipse/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar').find {
-        File file ->
-            file.absolutePath.endsWith('apikit-scaffolder.jar')
+    def studioDir = this.getProperty('studio.dir') as String
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+        def parts = [studioDir, 'Contents', 'Eclipse']
+        studioDir = parts.join('/')
+    }
+    def jarFile = new File("${studioDir}/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar")
+    assert jarFile.exists()
+    return zipTree(jarFile).find {
+        File file -> file.absolutePath.endsWith('apikit-scaffolder.jar')
     }
 }
 
@@ -79,7 +86,9 @@ clean.doLast {
 }
 
 task pluginDescriptor(type: Exec) {
-    commandLine 'mvn', '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
+    def whichWhere = Os.isFamily(Os.FAMILY_WINDOWS) ? 'where' : 'which'
+    def mvnPath = "${whichWhere} mvn".execute().text.trim()
+    commandLine mvnPath, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     doFirst {
         def pom = project.file('pom.xml')
         install.repositories.mavenInstaller.pom.writeTo(pom)
@@ -111,7 +120,10 @@ compileGroovy.doLast {
 }
 
 dependencies {
-    bundled files(getScaffolder().absolutePath)
+    def scaffolder = getScaffolder()
+    assert scaffolder.exists()
+    println "Scaffolder is ${scaffolder}"
+    bundled files(scaffolder.absolutePath)
     // from the scaffolder POM
     runtime 'org.mule.raml:parser-interface-impl-v1:3.8.4'
     runtime 'org.mule.raml:parser-interface-impl-v2:3.8.4'
@@ -129,6 +141,7 @@ dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.4.6'
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile 'org.hamcrest:hamcrest-library:1.3'
+    testCompile 'commons-io:commons-io:2.4'
 }
 
 jar {
