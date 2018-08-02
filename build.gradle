@@ -109,9 +109,8 @@ clean.doLast {
 }
 
 task pluginDescriptor(type: Exec) {
-    def whereCommand = Os.isFamily(Os.FAMILY_WINDOWS) ? 'where mvn.cmd' : 'which mvn'
-    def mvnPath = whereCommand.execute().text.trim()
-    commandLine mvnPath, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
+    def mvn = Os.isFamily(Os.FAMILY_WINDOWS) ? 'mvn.cmd' : 'mvn'
+    commandLine mvn, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     doFirst {
         def pom = project.file('pom.xml')
         install.repositories.mavenInstaller.pom.writeTo(pom)
