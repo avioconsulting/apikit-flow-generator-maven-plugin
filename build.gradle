@@ -109,8 +109,13 @@ clean.doLast {
 }
 
 task pluginDescriptor(type: Exec) {
-    def isChocolately = Os.isFamily(Os.FAMILY_WINDOWS) && 'mvn --version'.execute().waitFor() == 0
-    def mvn = Os.isFamily(Os.FAMILY_WINDOWS) && !isChocolately ? 'mvn.cmd' : 'mvn'
+    def isWindows = Os.isFamily(Os.FAMILY_WINDOWS)
+    def isChocolately = isWindows && 'mvn --version'.execute().waitFor() == 0
+    def mvn = isWindows && !isChocolately ? 'mvn.cmd' : 'mvn'
+    if (!isWindows || !isChocolately) {
+        def whereCommand = isWindows ? 'where mvn.cmd' : 'which mvn'
+        mvn = whereCommand.execute().text.trim()
+    }
     commandLine mvn, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     doFirst {
         def pom = project.file('pom.xml')
