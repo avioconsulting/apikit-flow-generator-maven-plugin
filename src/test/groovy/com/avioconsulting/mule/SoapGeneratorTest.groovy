@@ -5,8 +5,8 @@ import org.apache.maven.project.MavenProject
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static groovy.test.GroovyAssert.shouldFail
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class SoapGeneratorTest implements FileUtil {
@@ -73,6 +73,35 @@ class SoapGeneratorTest implements FileUtil {
         def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
         assertThat actual.text,
                    is(equalTo(expected.text))
+    }
+
+    @Test
+    void existing() {
+        // arrange
+        writeMuleDeployProps()
+        // do our first generation, then we'll do it again and results should be the same
+        SoapGenerator.generate(tempDir,
+                               newWsdlPath,
+                               'v1',
+                               'theConfig',
+                               'WeirdServiceName',
+                               'WeirdPortName',
+                               '<foobar/>')
+
+        // act
+        def exception = shouldFail {
+            SoapGenerator.generate(tempDir,
+                                   newWsdlPath,
+                                   'v1',
+                                   'theConfig',
+                                   'WeirdServiceName',
+                                   'WeirdPortName',
+                                   '<foobar/>')
+        }
+
+        // assert
+        assertThat exception.message,
+                   is(containsString('You can only use this plugin to do the initial generation of flows from WSDL. Use Studio to perform updates!'))
     }
 
     @Test

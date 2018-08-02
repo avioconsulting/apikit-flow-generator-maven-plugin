@@ -30,9 +30,10 @@ class SoapGenerator implements FileUtil {
         def generatedFilenameOnly = "${FilenameUtils.getBaseName(wsdlPath.name)}_${version}.xml"
         def outputFile = new File(appDir,
                                   generatedFilenameOnly)
-        if (!outputFile.exists()) {
-            outputFile.text = SoapResources.SOAP_TEMPLATE
+        if (outputFile.exists()) {
+            throw new Exception('You can only use this plugin to do the initial generation of flows from WSDL. Use Studio to perform updates!')
         }
+        outputFile.text = SoapResources.SOAP_TEMPLATE
         def tempDomain = File.createTempFile('muledomain', '.xml')
         try {
             def domainXmlText = SoapResources.DOMAIN_TEMPLATE
