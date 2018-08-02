@@ -31,6 +31,7 @@ class SoapGenerator implements FileUtil {
         def outputFile = new File(appDir,
                                   generatedFilenameOnly)
         if (outputFile.exists()) {
+            // plugin currently duplicates existing files, so don't try and support this
             throw new Exception('You can only use this plugin to do the initial generation of flows from WSDL. Use Studio to perform updates!')
         }
         outputFile.text = SoapResources.SOAP_TEMPLATE
