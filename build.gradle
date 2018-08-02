@@ -63,13 +63,20 @@ uploadArchives {
 // this is inside an OSGI bundle that's only installed with Studio
 // need to get the JAR from inside
 def getScaffolder = {
-    def studioDir = this.getProperty('studio.dir') as String
+    String studioDir
+    try {
+        studioDir = this.getProperty('studio.dir') as String
+    }
+    catch (e) {
+        throw new Exception('set studio.dir in either ~/gradle.properties or gradle.properties in this directory')
+    }
     if (Os.isFamily(Os.FAMILY_MAC)) {
         def parts = [studioDir, 'Contents', 'Eclipse']
         studioDir = parts.join('/')
     }
-    def jarFile = new File("${studioDir}/plugins/org.mule.tooling.apikit.deps_6.2.5.201705081532.jar")
-    assert jarFile.exists()
+    def files = new FileNameFinder().getFileNames("${studioDir}/plugins", "org.mule.tooling.apikit*.jar")
+    assert !files.empty
+    def jarFile = new File(files[0])
     return zipTree(jarFile).find {
         File file -> file.absolutePath.endsWith('apikit-scaffolder.jar')
     }
