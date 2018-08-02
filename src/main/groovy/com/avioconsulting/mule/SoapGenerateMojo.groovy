@@ -16,10 +16,10 @@ class SoapGenerateMojo extends AbstractMojo {
     @Parameter(property = 'wsdl.path', required = true)
     private File wsdlPath
 
-    @Parameter(property = 'wsdl.port', required = true)
+    @Parameter(property = 'wsdl.port')
     private String wsdlPort
 
-    @Parameter(property = 'wsdl.service', required = true)
+    @Parameter(property = 'wsdl.service')
     private String wsdlService
 
     @Parameter(property = 'http.listener.config.name', required = true)

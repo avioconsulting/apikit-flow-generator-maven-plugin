@@ -7,6 +7,9 @@ import org.jdom2.output.XMLOutputter
 import org.mule.soapkit.xml.generator.Scaffolder
 import org.mule.soapkit.xml.generator.model.buildables.SoapkitApiConfig
 
+import javax.wsdl.Port
+import javax.wsdl.Service
+import javax.wsdl.factory.WSDLFactory
 import java.util.regex.Pattern
 
 class SoapGenerator implements FileUtil {
@@ -15,10 +18,23 @@ class SoapGenerator implements FileUtil {
     static void generate(File baseDirectory,
                          File wsdlPath,
                          String version,
-                         String service,
-                         String port,
-                         String httpListenerConfigName) {
+                         String httpListenerConfigName,
+                         String service = null,
+                         String port = null) {
         def wsdlPathStr = wsdlPath.absolutePath
+        def wsdlDef = WSDLFactory.newInstance().newWSDLReader().readWSDL(wsdlPathStr)
+        Service serviceObject = null
+        if (service == null) {
+            assert wsdlDef.services.size() > 0
+            serviceObject = wsdlDef.services.values()[0] as Service
+            service = serviceObject.QName.localPart
+        }
+        if (port == null) {
+            assert serviceObject
+            assert serviceObject.ports.size() > 0
+            def portObj = serviceObject.ports.values()[0] as Port
+            port = portObj.name
+        }
         def config = new SoapkitApiConfig(wsdlPathStr,
                                           service,
                                           port)

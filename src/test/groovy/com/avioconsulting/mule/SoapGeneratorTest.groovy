@@ -24,7 +24,7 @@ class SoapGeneratorTest implements FileUtil {
     }
 
     @Test
-    void newFile() {
+    void newFile_explicit_svc() {
         // arrange
         writeMuleDeployProps()
 
@@ -32,8 +32,27 @@ class SoapGeneratorTest implements FileUtil {
         SoapGenerator.generate(tempDir,
                                new File('src/test/resources/wsdl/input.wsdl'),
                                'v1',
+                               'theConfig',
                                'WeirdServiceName',
-                               'WeirdPortName',
+                               'WeirdPortName')
+
+        // assert
+        def actual = new File(appDir, 'input_v1.xml')
+        assert actual.exists()
+        def expected = new File('src/test/resources/expectedInput.xml')
+        assertThat actual.text,
+                   is(equalTo(expected.text))
+    }
+
+    @Test
+    void newFile_implicit_svc() {
+        // arrange
+        writeMuleDeployProps()
+
+        // act
+        SoapGenerator.generate(tempDir,
+                               new File('src/test/resources/wsdl/input.wsdl'),
+                               'v1',
                                'theConfig')
 
         // assert
@@ -53,9 +72,7 @@ class SoapGeneratorTest implements FileUtil {
         SoapGenerator.generate(tempDir,
                                new File('src/test/resources/wsdl/input.wsdl'),
                                'v1',
-                               'WeirdServiceName',
-                               'WeirdPortName',
-                               'theConfig')
+                               'WeirdServiceName')
 
         // assert
         def props = new Properties()
