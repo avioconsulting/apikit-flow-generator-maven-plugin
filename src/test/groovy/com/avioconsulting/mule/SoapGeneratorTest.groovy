@@ -54,6 +54,28 @@ class SoapGeneratorTest implements FileUtil {
     }
 
     @Test
+    void newFile_explicit_svc_insert_xml() {
+        // arrange
+        writeMuleDeployProps()
+
+        // act
+        SoapGenerator.generate(tempDir,
+                               newWsdlPath,
+                               'v1',
+                               'theConfig',
+                               'WeirdServiceName',
+                               'WeirdPortName',
+                               '<foobar/>')
+
+        // assert
+        def actual = new File(appDir, 'input_v1.xml')
+        assert actual.exists()
+        def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
+        assertThat actual.text,
+                   is(equalTo(expected.text))
+    }
+
+    @Test
     void via_mojo_implicit() {
         // arrange
         writeMuleDeployProps()

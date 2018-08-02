@@ -29,6 +29,9 @@ class SoapGenerateMojo extends AbstractMojo {
     @Parameter(property = 'http.listener.config.name', required = true)
     private String httpListenerConfigName
 
+    @Parameter(property = 'mule.xml.insert.before.router')
+    private String insertXmlBeforeRouter
+
     @Component
     protected MavenProject mavenProject
 
@@ -49,11 +52,15 @@ class SoapGenerateMojo extends AbstractMojo {
             wsdlPort = portObj.name
         }
         log.info("Generating flows using WSDL at ${wsdlPath}, version ${apiVersion}, service ${wsdlService}, port ${wsdlPort}, and using HTTP listener ${httpListenerConfigName}")
+        if (this.insertXmlBeforeRouter) {
+            log.info("Adding ${insertXmlBeforeRouter} before generated router...")
+        }
         SoapGenerator.generate(mavenProject.basedir,
                                wsdlPath,
                                apiVersion,
                                httpListenerConfigName,
                                wsdlService,
-                               wsdlPort)
+                               wsdlPort,
+                               insertXmlBeforeRouter)
     }
 }

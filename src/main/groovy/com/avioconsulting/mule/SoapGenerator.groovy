@@ -18,7 +18,8 @@ class SoapGenerator implements FileUtil {
                          String version,
                          String httpListenerConfigName,
                          String service,
-                         String port) {
+                         String port,
+                         String insertXmlBeforeRouter = null) {
         def wsdlPathStr = wsdlPath.absolutePath
         def config = new SoapkitApiConfig(wsdlPathStr,
                                           service,
@@ -54,6 +55,10 @@ class SoapGenerator implements FileUtil {
                              '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
                     .replace(wsdlPath.absolutePath,
                              relativeWsdl)
+            if (insertXmlBeforeRouter) {
+                fileXml = fileXml.replace('<apikit-soap:router',
+                                          "${insertXmlBeforeRouter}\r\n    <apikit-soap:router")
+            }
             outputFile.text = fileXml
             def muleDeployProps = new Properties()
             def muleDeployPropsFile = new File(appDir, 'mule-deploy.properties')
