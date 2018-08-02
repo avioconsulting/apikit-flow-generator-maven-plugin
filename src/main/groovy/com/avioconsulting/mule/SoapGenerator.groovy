@@ -23,7 +23,9 @@ class SoapGenerator implements FileUtil {
         def config = new SoapkitApiConfig(wsdlPathStr,
                                           service,
                                           port)
-        File appDir = join(baseDirectory, 'src', 'main', 'app')
+        def mainDir = join(baseDirectory, 'src', 'main')
+        def wsdlDir = join(mainDir, 'wsdl')
+        def appDir = join(mainDir, 'app')
         def generatedFilenameOnly = "${FilenameUtils.getBaseName(wsdlPath.name)}_${version}.xml"
         def outputFile = new File(appDir,
                                   generatedFilenameOnly)
@@ -42,11 +44,16 @@ class SoapGenerator implements FileUtil {
             def outputter = new XMLOutputter()
             outputter.format = Format.getPrettyFormat()
             outputter.output(result, new FileWriter(outputFile))
+            // don't want an absolute path in here, need it relative to src/main/wsdl
+            // project will ensure wsdl directory is at root of ZIP
+            def relativeWsdl = wsdlDir.toPath().relativize(wsdlPath.toPath()).toString()
             def fileXml = outputFile.text
             fileXml = fileXml.replaceAll(listenerPattern,
                                          "<http:listener path=\"/${version}\$1\"")
                     .replace('<apikit-soap:config',
                              '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
+                    .replace(wsdlPath.absolutePath,
+                             relativeWsdl)
             outputFile.text = fileXml
             def muleDeployProps = new Properties()
             def muleDeployPropsFile = new File(appDir, 'mule-deploy.properties')

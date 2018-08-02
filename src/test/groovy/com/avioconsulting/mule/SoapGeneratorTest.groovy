@@ -1,5 +1,6 @@
 package com.avioconsulting.mule
 
+import org.apache.commons.io.FileUtils
 import org.apache.maven.project.MavenProject
 import org.junit.Before
 import org.junit.Test
@@ -9,7 +10,7 @@ import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 class SoapGeneratorTest implements FileUtil {
-    private File tempDir, appDir, mainDir
+    private File tempDir, appDir, mainDir, wsdlDir, newWsdlPath
 
     @Before
     void setup() {
@@ -22,6 +23,13 @@ class SoapGeneratorTest implements FileUtil {
         mainDir.mkdirs()
         appDir = join mainDir, 'app'
         appDir.mkdirs()
+        wsdlDir = join mainDir, 'wsdl'
+        wsdlDir.mkdirs()
+        FileUtils.copyFileToDirectory(new File('src/test/resources/wsdl/input.wsdl'),
+                                      wsdlDir)
+        FileUtils.copyFileToDirectory(new File('src/test/resources/wsdl/schema.xsd'),
+                                      wsdlDir)
+        newWsdlPath = join wsdlDir, 'input.wsdl'
     }
 
     @Test
@@ -31,7 +39,7 @@ class SoapGeneratorTest implements FileUtil {
 
         // act
         SoapGenerator.generate(tempDir,
-                               new File('src/test/resources/wsdl/input.wsdl'),
+                               newWsdlPath,
                                'v1',
                                'theConfig',
                                'WeirdServiceName',
@@ -51,7 +59,7 @@ class SoapGeneratorTest implements FileUtil {
         writeMuleDeployProps()
         def mojo = new SoapGenerateMojo().with {
             it.apiVersion = 'v1'
-            it.wsdlPath = new File('src/test/resources/wsdl/input.wsdl')
+            it.wsdlPath = newWsdlPath
             it.httpListenerConfigName = 'theConfig'
             it.mavenProject = [
                     getBasedir: {
@@ -79,9 +87,11 @@ class SoapGeneratorTest implements FileUtil {
 
         // act
         SoapGenerator.generate(tempDir,
-                               new File('src/test/resources/wsdl/input.wsdl'),
+                               newWsdlPath,
                                'v1',
-                               'WeirdServiceName')
+                               'theConfig',
+                               'WeirdServiceName',
+                               'WeirdPortName')
 
         // assert
         def props = new Properties()
