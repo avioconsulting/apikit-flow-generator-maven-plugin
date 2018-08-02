@@ -10,14 +10,14 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
-class GeneratorTest implements FileUtil {
+class RestGeneratorTest implements FileUtil {
     private File tempDir, appDir, mainDir, apiDir
-    private static Namespace http = new Namespace(Generator.http.URI)
-    public static final Namespace apiKit = new Namespace(Generator.apiKit.URI)
-    public static final Namespace xsi = new Namespace(Generator.xsi.URI)
-    public static final Namespace scripting = new Namespace(Generator.scripting.URI)
-    public static final Namespace doc = new Namespace(Generator.doc.URI)
-    public static final Namespace json = new Namespace(Generator.json.URI)
+    private static Namespace http = new Namespace(RestGenerator.http.URI)
+    public static final Namespace apiKit = new Namespace(RestGenerator.apiKit.URI)
+    public static final Namespace xsi = new Namespace(RestGenerator.xsi.URI)
+    public static final Namespace scripting = new Namespace(RestGenerator.scripting.URI)
+    public static final Namespace doc = new Namespace(RestGenerator.doc.URI)
+    public static final Namespace json = new Namespace(RestGenerator.json.URI)
 
     @Before
     void setup() {
@@ -47,12 +47,12 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -63,23 +63,23 @@ class GeneratorTest implements FileUtil {
     @Test
     void regenerates_Flow() {
         // arrange
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
         def flowXmlFile = join(appDir, 'api-stuff-v1.xml')
         assert flowXmlFile.exists()
         def existingFlowXmlContents = flowXmlFile.text
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         assertThat flowXmlFile.text,
@@ -94,12 +94,12 @@ class GeneratorTest implements FileUtil {
         def origRamlText = ramlFile.text
 
         // act
-        Generator.generate(tempDir,
-                           raml,
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               raml,
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         assertThat ramlFile.text,
@@ -114,12 +114,12 @@ class GeneratorTest implements FileUtil {
         def origRamlText = ramlFile.text
 
         // act
-        Generator.generate(tempDir,
-                           raml,
-                           'stuff',
-                           'v1',
-                           true,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               raml,
+                               'stuff',
+                               'v1',
+                               true,
+                               'theProject')
 
         // assert
         assertThat ramlFile.text,
@@ -133,11 +133,11 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false, 'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -150,11 +150,11 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false, 'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false, 'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -169,12 +169,12 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -188,12 +188,12 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -208,12 +208,12 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -248,12 +248,12 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -307,12 +307,12 @@ class GeneratorTest implements FileUtil {
         // arrange
 
         // act
-        Generator.generate(tempDir,
-                           'api-stuff-v1.raml',
-                           'stuff',
-                           'v1',
-                           false,
-                           'theProject')
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
