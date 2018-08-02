@@ -51,7 +51,7 @@ class SoapGeneratorTest implements FileUtil {
         def expected = new File('src/test/resources/expectedInput.xml')
         assertThat actual.text,
                    is(equalTo(expected.text))
-        // TODO: Assert validation is property fed
+        // TODO: Assert validation is set and is property fed
         fail 'write the test'
     }
 

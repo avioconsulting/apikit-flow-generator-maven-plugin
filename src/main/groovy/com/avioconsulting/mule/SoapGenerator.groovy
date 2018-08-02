@@ -7,7 +7,11 @@ import org.jdom2.output.XMLOutputter
 import org.mule.soapkit.xml.generator.Scaffolder
 import org.mule.soapkit.xml.generator.model.buildables.SoapkitApiConfig
 
+import java.util.regex.Pattern
+
 class SoapGenerator implements FileUtil {
+    private static final Pattern listenerPattern = Pattern.compile(/<http:listener path="(.*?)"/)
+
     static void generate(File baseDirectory,
                          File wsdlPath,
                          String version,
@@ -37,6 +41,10 @@ class SoapGenerator implements FileUtil {
             def outputter = new XMLOutputter()
             outputter.format = Format.getPrettyFormat()
             outputter.output(result, new FileWriter(outputFile))
+            def fileXml = outputFile.text
+            fileXml = fileXml.replaceAll(listenerPattern,
+                                         "<http:listener path=\"/${version}\$1\"")
+            outputFile.text = fileXml
         }
         finally {
             FileUtils.forceDelete(tempDomain)
