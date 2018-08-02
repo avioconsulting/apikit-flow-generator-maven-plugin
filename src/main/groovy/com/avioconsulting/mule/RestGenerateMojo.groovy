@@ -8,7 +8,7 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 
-@Mojo(name = 'generateFlow')
+@Mojo(name = 'generateFlowRest')
 class RestGenerateMojo extends AbstractMojo {
     @Parameter(property = 'api.name')
     private String apiName
