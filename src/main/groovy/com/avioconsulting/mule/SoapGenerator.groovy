@@ -22,8 +22,10 @@ class SoapGenerator implements FileUtil {
         def config = new SoapkitApiConfig(wsdlPathStr,
                                           service,
                                           port)
-        def outputFile = new File(join(baseDirectory, 'src', 'main', 'app'),
-                                  "${FilenameUtils.getBaseName(wsdlPath.name)}_${version}.xml")
+        File appDir = join(baseDirectory, 'src', 'main', 'app')
+        def generatedFilenameOnly = "${FilenameUtils.getBaseName(wsdlPath.name)}_${version}.xml"
+        def outputFile = new File(appDir,
+                                  generatedFilenameOnly)
         if (!outputFile.exists()) {
             def stream = getClass().getResourceAsStream('/soap_template.xml')
             outputFile.text = stream.text
@@ -47,6 +49,15 @@ class SoapGenerator implements FileUtil {
                     .replace('<apikit-soap:config',
                              '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
             outputFile.text = fileXml
+            def muleDeployProps = new Properties()
+            def muleDeployPropsFile = new File(appDir, 'mule-deploy.properties')
+            muleDeployProps.load(new FileInputStream(muleDeployPropsFile))
+            def configResources = muleDeployProps.getProperty('config.resources').split(',').collect { p ->
+                p.trim()
+            }
+            configResources << generatedFilenameOnly.toString()
+            muleDeployProps.setProperty('config.resources', configResources.join(','))
+            muleDeployProps.store(new FileOutputStream(muleDeployPropsFile), 'Updated by apikit flow generator plugin')
         }
         finally {
             FileUtils.forceDelete(tempDomain)

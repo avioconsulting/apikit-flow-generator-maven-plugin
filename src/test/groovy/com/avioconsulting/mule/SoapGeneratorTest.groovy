@@ -24,18 +24,9 @@ class SoapGeneratorTest implements FileUtil {
     }
 
     @Test
-    void existing() {
-        // arrange
-
-        // act
-
-        // assert
-        fail 'write the test'
-    }
-
-    @Test
     void newFile() {
         // arrange
+        writeMuleDeployProps()
 
         // act
         SoapGenerator.generate(tempDir,
@@ -56,11 +47,30 @@ class SoapGeneratorTest implements FileUtil {
     @Test
     void muleDeployProperties() {
         // arrange
+        writeMuleDeployProps()
 
         // act
+        SoapGenerator.generate(tempDir,
+                               new File('src/test/resources/wsdl/input.wsdl'),
+                               'v1',
+                               'WeirdServiceName',
+                               'WeirdPortName',
+                               'theConfig')
 
         // assert
-        fail 'write the test'
+        def props = new Properties()
+        def propsFile = new File(appDir, 'mule-deploy.properties')
+        props.load(new FileInputStream(propsFile))
+        assertThat props.getProperty('config.resources'),
+                   is(equalTo('global.xml,input_v1.xml'))
+    }
+
+    private writeMuleDeployProps() {
+        def props = new Properties()
+        props.setProperty('config.resources', 'global.xml')
+        def propsFile = new File(appDir, 'mule-deploy.properties')
+        props.store(new FileOutputStream(propsFile), 'comments')
+        [props, propsFile]
     }
 
 }
