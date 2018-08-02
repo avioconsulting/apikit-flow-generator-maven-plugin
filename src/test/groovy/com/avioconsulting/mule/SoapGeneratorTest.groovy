@@ -1,5 +1,6 @@
 package com.avioconsulting.mule
 
+import org.apache.maven.project.MavenProject
 import org.junit.Before
 import org.junit.Test
 
@@ -45,15 +46,23 @@ class SoapGeneratorTest implements FileUtil {
     }
 
     @Test
-    void newFile_implicit_svc() {
+    void via_mojo_implicit() {
         // arrange
         writeMuleDeployProps()
+        def mojo = new SoapGenerateMojo().with {
+            it.apiVersion = 'v1'
+            it.wsdlPath = new File('src/test/resources/wsdl/input.wsdl')
+            it.httpListenerConfigName = 'theConfig'
+            it.mavenProject = [
+                    getBasedir: {
+                        tempDir
+                    }
+            ] as MavenProject
+            it
+        }
 
         // act
-        SoapGenerator.generate(tempDir,
-                               new File('src/test/resources/wsdl/input.wsdl'),
-                               'v1',
-                               'theConfig')
+        mojo.execute()
 
         // assert
         def actual = new File(appDir, 'input_v1.xml')

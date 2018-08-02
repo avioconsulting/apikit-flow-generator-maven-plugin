@@ -1,5 +1,6 @@
 package com.avioconsulting.mule
 
+import com.avioconsulting.mule.resources.SoapResources
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.jdom2.output.Format
@@ -7,9 +8,6 @@ import org.jdom2.output.XMLOutputter
 import org.mule.soapkit.xml.generator.Scaffolder
 import org.mule.soapkit.xml.generator.model.buildables.SoapkitApiConfig
 
-import javax.wsdl.Port
-import javax.wsdl.Service
-import javax.wsdl.factory.WSDLFactory
 import java.util.regex.Pattern
 
 class SoapGenerator implements FileUtil {
@@ -19,22 +17,9 @@ class SoapGenerator implements FileUtil {
                          File wsdlPath,
                          String version,
                          String httpListenerConfigName,
-                         String service = null,
-                         String port = null) {
+                         String service,
+                         String port) {
         def wsdlPathStr = wsdlPath.absolutePath
-        def wsdlDef = WSDLFactory.newInstance().newWSDLReader().readWSDL(wsdlPathStr)
-        Service serviceObject = null
-        if (service == null) {
-            assert wsdlDef.services.size() > 0
-            serviceObject = wsdlDef.services.values()[0] as Service
-            service = serviceObject.QName.localPart
-        }
-        if (port == null) {
-            assert serviceObject
-            assert serviceObject.ports.size() > 0
-            def portObj = serviceObject.ports.values()[0] as Port
-            port = portObj.name
-        }
         def config = new SoapkitApiConfig(wsdlPathStr,
                                           service,
                                           port)
@@ -43,13 +28,11 @@ class SoapGenerator implements FileUtil {
         def outputFile = new File(appDir,
                                   generatedFilenameOnly)
         if (!outputFile.exists()) {
-            def stream = getClass().getResourceAsStream('/soap_template.xml')
-            outputFile.text = stream.text
+            outputFile.text = SoapResources.SOAP_TEMPLATE
         }
         def tempDomain = File.createTempFile('muledomain', '.xml')
         try {
-            def domainXmlText = getClass().getResourceAsStream('/domain_template.xml')
-                    .text
+            def domainXmlText = SoapResources.DOMAIN_TEMPLATE
                     .replace('OUR_LISTENER_CONFIG', httpListenerConfigName)
             tempDomain.text = domainXmlText
             def result = Scaffolder.instance.scaffold(outputFile,
