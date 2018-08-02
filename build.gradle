@@ -109,7 +109,8 @@ clean.doLast {
 }
 
 task pluginDescriptor(type: Exec) {
-    def mvn = Os.isFamily(Os.FAMILY_WINDOWS) ? 'mvn.cmd' : 'mvn'
+    def isChocolately = Os.isFamily(Os.FAMILY_WINDOWS) && 'mvn --version'.execute().waitFor() == 0
+    def mvn = Os.isFamily(Os.FAMILY_WINDOWS) && !isChocolately ? 'mvn.cmd' : 'mvn'
     commandLine mvn, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     doFirst {
         def pom = project.file('pom.xml')
