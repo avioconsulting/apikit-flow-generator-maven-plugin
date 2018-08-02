@@ -17,6 +17,9 @@ class SoapGenerateMojo extends AbstractMojo {
     @Parameter(property = 'api.current.version', required = true)
     private String apiVersion
 
+    @Parameter(property = 'api.name', defaultValue = '${project.artifactId}')
+    private String apiName
+
     @Parameter(property = 'wsdl.path', required = true)
     private File wsdlPath
 
@@ -57,6 +60,7 @@ class SoapGenerateMojo extends AbstractMojo {
         }
         SoapGenerator.generate(mavenProject.basedir,
                                wsdlPath,
+                               apiName,
                                apiVersion,
                                httpListenerConfigName,
                                wsdlService,

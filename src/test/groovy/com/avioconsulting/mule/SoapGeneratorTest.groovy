@@ -40,6 +40,7 @@ class SoapGeneratorTest implements FileUtil {
         // act
         SoapGenerator.generate(tempDir,
                                newWsdlPath,
+                               'foobar',
                                'v1',
                                'theConfig',
                                'WeirdServiceName',
@@ -61,6 +62,7 @@ class SoapGeneratorTest implements FileUtil {
         // act
         SoapGenerator.generate(tempDir,
                                newWsdlPath,
+                               'foobar',
                                'v1',
                                'theConfig',
                                'WeirdServiceName',
@@ -82,6 +84,7 @@ class SoapGeneratorTest implements FileUtil {
         // do our first generation, then we'll do it again and results should be the same
         SoapGenerator.generate(tempDir,
                                newWsdlPath,
+                               'foobar',
                                'v1',
                                'theConfig',
                                'WeirdServiceName',
@@ -92,6 +95,7 @@ class SoapGeneratorTest implements FileUtil {
         def exception = shouldFail {
             SoapGenerator.generate(tempDir,
                                    newWsdlPath,
+                                   'foobar',
                                    'v1',
                                    'theConfig',
                                    'WeirdServiceName',
@@ -110,6 +114,7 @@ class SoapGeneratorTest implements FileUtil {
         writeMuleDeployProps()
         def mojo = new SoapGenerateMojo().with {
             it.apiVersion = 'v1'
+            it.apiName = 'foobar'
             it.wsdlPath = newWsdlPath
             it.httpListenerConfigName = 'theConfig'
             it.mavenProject = [
@@ -139,6 +144,7 @@ class SoapGeneratorTest implements FileUtil {
         // act
         SoapGenerator.generate(tempDir,
                                newWsdlPath,
+                               'foobar',
                                'v1',
                                'theConfig',
                                'WeirdServiceName',

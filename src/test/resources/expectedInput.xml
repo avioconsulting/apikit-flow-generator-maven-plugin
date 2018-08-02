@@ -4,7 +4,7 @@
     <set-payload value="&lt;soap:Fault xmlns:soap=&quot;http://www.w3.org/2003/05/soap-envelope&quot;&gt;&lt;faultcode&gt;soap:Server&lt;/faultcode&gt;&lt;faultstring&gt;Operation [operation1:/WeirdServiceName/WeirdPortName/api-config] not implemented&lt;/faultstring&gt;&lt;/soap:Fault&gt;" />
   </flow>
   <flow name="api-main">
-    <http:listener path="/v1/WeirdServiceName/WeirdPortName" config-ref="theConfig" doc:name="/WeirdServiceName/WeirdPortName" />
+    <http:listener path="/foobar/v1/WeirdServiceName/WeirdPortName" config-ref="theConfig" doc:name="/WeirdServiceName/WeirdPortName" />
     <apikit-soap:router config-ref="/WeirdServiceName/WeirdPortName/api-config" />
   </flow>
 </mule>

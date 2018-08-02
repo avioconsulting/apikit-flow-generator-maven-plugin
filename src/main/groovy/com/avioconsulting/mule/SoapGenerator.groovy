@@ -15,6 +15,7 @@ class SoapGenerator implements FileUtil {
 
     static void generate(File baseDirectory,
                          File wsdlPath,
+                         String apiName,
                          String version,
                          String httpListenerConfigName,
                          String service,
@@ -52,7 +53,7 @@ class SoapGenerator implements FileUtil {
             def relativeWsdl = wsdlDir.toPath().relativize(wsdlPath.toPath()).toString()
             def fileXml = outputFile.text
             fileXml = fileXml.replaceAll(listenerPattern,
-                                         "<http:listener path=\"/${version}\$1\"")
+                                         "<http:listener path=\"/${apiName}/${version}\$1\"")
                     .replace('<apikit-soap:config',
                              '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
                     .replace(wsdlPath.absolutePath,
