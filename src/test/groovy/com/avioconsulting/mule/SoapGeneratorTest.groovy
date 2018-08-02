@@ -1,10 +1,10 @@
 package com.avioconsulting.mule
 
-
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 class SoapGeneratorTest implements FileUtil {
@@ -51,8 +51,6 @@ class SoapGeneratorTest implements FileUtil {
         def expected = new File('src/test/resources/expectedInput.xml')
         assertThat actual.text,
                    is(equalTo(expected.text))
-        // TODO: Assert validation is set and is property fed
-        fail 'write the test'
     }
 
     @Test

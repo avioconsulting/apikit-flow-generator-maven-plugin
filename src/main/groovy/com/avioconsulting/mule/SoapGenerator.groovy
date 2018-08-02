@@ -44,6 +44,8 @@ class SoapGenerator implements FileUtil {
             def fileXml = outputFile.text
             fileXml = fileXml.replaceAll(listenerPattern,
                                          "<http:listener path=\"/${version}\$1\"")
+                    .replace('<apikit-soap:config',
+                             '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
             outputFile.text = fileXml
         }
         finally {
