@@ -1,5 +1,6 @@
 package com.avioconsulting.mule
 
+import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
@@ -23,11 +24,22 @@ class SoapGenerator implements FileUtil {
             def stream = getClass().getResourceAsStream('/soap_template.xml')
             outputFile.text = stream.text
         }
-        def result = Scaffolder.instance.scaffold(outputFile,
-                                                  wsdlPathStr,
-                                                  config)
-        def outputter = new XMLOutputter()
-        outputter.format = Format.getPrettyFormat()
-        outputter.output(result, new FileWriter(outputFile))
+        def tempDomain = File.createTempFile('muledomain', '.xml')
+        try {
+            def domainXmlText = getClass().getResourceAsStream('/domain_template.xml')
+                    .text
+                    .replace('OUR_LISTENER_CONFIG', httpListenerConfigName)
+            tempDomain.text = domainXmlText
+            def result = Scaffolder.instance.scaffold(outputFile,
+                                                      wsdlPathStr,
+                                                      config,
+                                                      tempDomain.absolutePath)
+            def outputter = new XMLOutputter()
+            outputter.format = Format.getPrettyFormat()
+            outputter.output(result, new FileWriter(outputFile))
+        }
+        finally {
+            FileUtils.forceDelete(tempDomain)
+        }
     }
 }
