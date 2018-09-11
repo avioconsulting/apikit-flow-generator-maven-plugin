@@ -16,7 +16,7 @@ echo "Pushing to AVIO Nexus DFW"
 echo "Now updating DFW customer code"
 git checkout dfw
 git rebase master
-git push --force dfw dfw:master
+git push --force dfwgithub dfw:master
 git push --force origin dfw
 
 echo Now you can push to DFW Artifactory via Gradle on your VPN VM and then switch back...
