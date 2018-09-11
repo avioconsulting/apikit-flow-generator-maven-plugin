@@ -156,13 +156,14 @@ dependencies {
     println "SOAP Scaffolder is ${soapScaffolder}"
     bundled files(soapScaffolder)
     // from the scaffolder POM
-    runtime 'org.mule.raml:parser-interface-impl-v1:3.8.4'
-    runtime 'org.mule.raml:parser-interface-impl-v2:3.8.4'
-    runtime 'org.mule.raml:parser-interface:3.8.4'
+    def muleVersion = '3.9.1'
+    runtime "org.mule.raml:parser-interface-impl-v1:${muleVersion}"
+    runtime "org.mule.raml:parser-interface-impl-v2:${muleVersion}"
+    runtime 'org.mule.raml:parser-interface:3.9.1'
     runtime 'jaxen:jaxen:1.1.4'
     // transitive dependencies
     runtime 'org.raml:raml-parser:0.8.17'
-    runtime 'org.raml:raml-parser-2:1.0.3'
+    runtime 'org.raml:raml-parser-2:1.0.26'
     // indirect dependency
     provided 'org.apache.maven:maven-plugin-api:3.3.9'
     // direct
