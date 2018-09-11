@@ -1,5 +1,6 @@
 package com.avioconsulting.mule
 
+import org.apache.commons.io.FilenameUtils
 import org.codehaus.plexus.util.FileUtils
 import org.jdom2.CDATA
 import org.jdom2.Element
@@ -8,8 +9,6 @@ import org.jdom2.input.SAXBuilder
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
 import org.mule.tools.apikit.ScaffolderAPI
-
-import java.nio.file.Files
 
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
@@ -60,9 +59,12 @@ class RestGenerator implements FileUtil {
         }
         def flowPath = new File(appDirectory, flowFileName)
         assert flowPath.exists()
+        // Mule's generator will use the RAML filename by convention
+        def apiBaseName = FilenameUtils.getBaseName(ramlPath)
         alterGeneratedFlow(flowPath,
                            apiName,
-                           apiVersion)
+                           apiVersion,
+                           apiBaseName)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -77,7 +79,8 @@ class RestGenerator implements FileUtil {
 
     private static void alterGeneratedFlow(File flowPath,
                                            String apiName,
-                                           String apiVersion) {
+                                           String apiVersion,
+                                           String apiBaseName) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
@@ -87,15 +90,13 @@ class RestGenerator implements FileUtil {
                             apiVersion)
         parameterizeApiKitConfig(rootElement)
         addChoiceRouting(rootElement,
-                         apiName,
-                         apiVersion)
+                         apiBaseName)
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document, new FileWriter(flowPath))
     }
 
     private static void addChoiceRouting(Element rootElement,
-                                         String apiName,
-                                         String apiVersion) {
+                                         String apiBaseName) {
         def schemaLocation = rootElement.getAttribute('schemaLocation', xsi)
         def existingSchemaLocations = schemaLocation.value.split(' ')
         existingSchemaLocations += [
@@ -106,11 +107,11 @@ class RestGenerator implements FileUtil {
         ]
         schemaLocation.value = existingSchemaLocations.join(' ')
         allowDetailedValidationInfo(rootElement)
-        def lookFor = "api-${apiName}-${apiVersion}-console"
+        def lookFor = "${apiBaseName}-console"
         def consoleFlow = rootElement.getChildren('flow', core).find { element ->
             element.getAttribute('name').value == lookFor
         }
-        assert consoleFlow
+        assert consoleFlow: "Was looking for flow ${lookFor}"
         def consoleElement = consoleFlow.getChild('console', apiKit)
         consoleFlow.removeContent(consoleElement)
         setupChoice(consoleFlow,
