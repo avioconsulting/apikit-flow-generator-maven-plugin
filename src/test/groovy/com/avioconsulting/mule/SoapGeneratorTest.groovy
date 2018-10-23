@@ -58,7 +58,7 @@ class SoapGeneratorTest implements FileUtil {
                               'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text,
+        assertThat actual.text.replace('\r', ''),
                    is(equalTo(expected.text))
     }
 
@@ -82,7 +82,7 @@ class SoapGeneratorTest implements FileUtil {
                               'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
-        assertThat actual.text,
+        assertThat actual.text.replace('\r', ''),
                    is(equalTo(expected.text))
     }
 
@@ -142,7 +142,7 @@ class SoapGeneratorTest implements FileUtil {
                               'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text,
+        assertThat actual.text.replace('\r', ''),
                    is(equalTo(expected.text))
     }
 
