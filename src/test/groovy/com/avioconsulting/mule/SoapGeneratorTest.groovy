@@ -14,22 +14,29 @@ class SoapGeneratorTest implements FileUtil {
 
     @Before
     void setup() {
-        tempDir = join new File('build'), 'tmp', 'test'
+        tempDir = join new File('build'),
+                       'tmp',
+                       'test'
         if (tempDir.exists()) {
             tempDir.deleteDir()
         }
         tempDir.mkdirs()
-        mainDir = join tempDir, 'src', 'main'
+        mainDir = join tempDir,
+                       'src',
+                       'main'
         mainDir.mkdirs()
-        appDir = join mainDir, 'app'
+        appDir = join mainDir,
+                      'app'
         appDir.mkdirs()
-        wsdlDir = join mainDir, 'wsdl'
+        wsdlDir = join mainDir,
+                       'wsdl'
         wsdlDir.mkdirs()
         FileUtils.copyFileToDirectory(new File('src/test/resources/wsdl/input.wsdl'),
                                       wsdlDir)
         FileUtils.copyFileToDirectory(new File('src/test/resources/wsdl/schema.xsd'),
                                       wsdlDir)
-        newWsdlPath = join wsdlDir, 'input.wsdl'
+        newWsdlPath = join wsdlDir,
+                           'input.wsdl'
     }
 
     @Test
@@ -47,7 +54,8 @@ class SoapGeneratorTest implements FileUtil {
                                'WeirdPortName')
 
         // assert
-        def actual = new File(appDir, 'input_v1.xml')
+        def actual = new File(appDir,
+                              'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput.xml')
         assertThat actual.text,
@@ -70,7 +78,8 @@ class SoapGeneratorTest implements FileUtil {
                                '<foobar/>')
 
         // assert
-        def actual = new File(appDir, 'input_v1.xml')
+        def actual = new File(appDir,
+                              'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
         assertThat actual.text,
@@ -129,7 +138,8 @@ class SoapGeneratorTest implements FileUtil {
         mojo.execute()
 
         // assert
-        def actual = new File(appDir, 'input_v1.xml')
+        def actual = new File(appDir,
+                              'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput.xml')
         assertThat actual.text,
@@ -152,7 +162,14 @@ class SoapGeneratorTest implements FileUtil {
 
         // assert
         def props = new Properties()
-        def propsFile = new File(appDir, 'mule-deploy.properties')
+        def propsFile = new File(appDir,
+                                 'mule-deploy.properties')
+        def lines = propsFile.text.split('\n')
+        assertThat lines[0],
+                   is(equalTo('#Updated by apikit flow generator plugin'))
+        assertThat 'Expect this to be resources and not dates to ease things like archetype testing',
+                   lines[1],
+                   is(startsWith('config.resources'))
         props.load(new FileInputStream(propsFile))
         assertThat props.getProperty('config.resources'),
                    is(equalTo('global.xml,input_v1.xml'))
@@ -160,9 +177,12 @@ class SoapGeneratorTest implements FileUtil {
 
     private writeMuleDeployProps() {
         def props = new Properties()
-        props.setProperty('config.resources', 'global.xml')
-        def propsFile = new File(appDir, 'mule-deploy.properties')
-        props.store(new FileOutputStream(propsFile), 'comments')
+        props.setProperty('config.resources',
+                          'global.xml')
+        def propsFile = new File(appDir,
+                                 'mule-deploy.properties')
+        props.store(new FileOutputStream(propsFile),
+                    'comments')
         [props, propsFile]
     }
 
