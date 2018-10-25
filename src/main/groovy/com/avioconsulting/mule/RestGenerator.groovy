@@ -10,6 +10,8 @@ import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
 import org.mule.tools.apikit.ScaffolderAPI
 
+import static com.avioconsulting.mule.MuleDeployPropsCleaner.cleanProps
+
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
     public static final Namespace http = Namespace.getNamespace('http',
@@ -76,6 +78,13 @@ class RestGenerator implements FileUtil {
                            apiVersion,
                            apiBaseName,
                            insertApiNameInListenerPath)
+        def muleDeployProps = new Properties()
+        def muleDeployPropsFile = new File(appDirectory,
+                                           'mule-deploy.properties')
+        muleDeployProps.load(new FileInputStream(muleDeployPropsFile))
+        muleDeployProps.store(new FileOutputStream(muleDeployPropsFile),
+                              'Updated by apikit flow generator plugin')
+        cleanProps(muleDeployPropsFile)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,

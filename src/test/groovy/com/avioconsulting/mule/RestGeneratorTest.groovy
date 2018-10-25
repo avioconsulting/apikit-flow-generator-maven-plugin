@@ -93,12 +93,12 @@ class RestGeneratorTest implements FileUtil {
         def lines = propsFile.text.split('\n')
         assertThat lines[0],
                    is(equalTo('#Updated by apikit flow generator plugin'))
-        assertThat 'Expect this to be resources and not dates to ease things like archetype testing',
+        assertThat 'Expect this to be real settings and not dates to ease things like archetype testing',
                    lines[1],
-                   is(startsWith('config.resources'))
+                   is(startsWith('redeployment.enabled=true'))
         props.load(new FileInputStream(propsFile))
         assertThat props.getProperty('config.resources'),
-                   is(equalTo('global.xml,input_v1.xml'))
+                   is(equalTo('api-stuff-v1.xml'))
     }
 
     @Test

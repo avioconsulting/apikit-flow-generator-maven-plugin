@@ -8,9 +8,9 @@ import org.jdom2.output.XMLOutputter
 import org.mule.soapkit.xml.generator.Scaffolder
 import org.mule.soapkit.xml.generator.model.buildables.SoapkitApiConfig
 
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
+
+import static com.avioconsulting.mule.MuleDeployPropsCleaner.cleanProps
 
 class SoapGenerator implements FileUtil {
     private static final Pattern listenerPattern = Pattern.compile(/<http:listener path="(.*?)"/)
@@ -87,26 +87,7 @@ class SoapGenerator implements FileUtil {
                                         configResources.join(','))
             muleDeployProps.store(new FileOutputStream(muleDeployPropsFile),
                                   'Updated by apikit flow generator plugin')
-            def separator = System.getProperty('line.separator')
-            def lines = muleDeployPropsFile.text.split(separator)
-            def linesWithoutTimeStamp = lines.findAll { line ->
-                // it's not a date
-                if (!line.startsWith('#')) {
-                    return true
-                }
-                // trim off the # and any white space
-                line = line[1..-1].trim()
-                try {
-                    // Mule uses this format - Tue Oct 23 13:13:13 MDT 2018
-                    ZonedDateTime.parse(line,
-                                        DateTimeFormatter.ofPattern('EEE MMM dd HH:mm:ss z yyyy'))
-                    return false
-                }
-                catch (e) {
-                    return true
-                }
-            }
-            muleDeployPropsFile.write(linesWithoutTimeStamp.join(separator))
+            cleanProps(muleDeployPropsFile)
         }
         finally {
             FileUtils.forceDelete(tempDomain)
