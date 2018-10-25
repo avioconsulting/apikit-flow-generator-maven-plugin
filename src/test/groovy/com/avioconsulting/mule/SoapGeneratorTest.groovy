@@ -86,7 +86,7 @@ class SoapGeneratorTest implements FileUtil {
         def expected = new File('src/test/resources/expectedInput_No_ApiNameInPath.xml')
         assertThat actual.text.replace('\r',
                                        ''),
-                   is(equalTo(expected.text))
+                   is(equalTo(expected.text.trim()))
     }
 
     @Test
