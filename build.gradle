@@ -2,7 +2,7 @@ import groovy.xml.XmlUtil
 import org.apache.tools.ant.taskdefs.condition.Os
 
 group 'com.avioconsulting.mule'
-version '6.5.0.4'
+version '6.5.0.5'
 
 configurations {
     provided
