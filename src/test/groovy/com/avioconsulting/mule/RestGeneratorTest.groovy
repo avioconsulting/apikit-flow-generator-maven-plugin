@@ -74,6 +74,34 @@ class RestGeneratorTest implements FileUtil {
     }
 
     @Test
+    void mule_deploy_properties() {
+        // arrange
+
+        // act
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               true,
+                               'theProject')
+
+        // assert
+        def props = new Properties()
+        def propsFile = join appDir,
+                             'mule-deploy.properties'
+        def lines = propsFile.text.split('\n')
+        assertThat lines[0],
+                   is(equalTo('#Updated by apikit flow generator plugin'))
+        assertThat 'Expect this to be resources and not dates to ease things like archetype testing',
+                   lines[1],
+                   is(startsWith('config.resources'))
+        props.load(new FileInputStream(propsFile))
+        assertThat props.getProperty('config.resources'),
+                   is(equalTo('global.xml,input_v1.xml'))
+    }
+
+    @Test
     void generates_Flow_without_api_name() {
         // arrange
 
