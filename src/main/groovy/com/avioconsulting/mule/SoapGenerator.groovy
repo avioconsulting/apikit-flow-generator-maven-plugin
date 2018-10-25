@@ -22,6 +22,7 @@ class SoapGenerator implements FileUtil {
                          String httpListenerConfigName,
                          String service,
                          String port,
+                         boolean insertApiNameInListenerPath,
                          String insertXmlBeforeRouter = null) {
         def wsdlPathStr = wsdlPath.absolutePath
         def config = new SoapkitApiConfig(wsdlPathStr,
@@ -61,8 +62,10 @@ class SoapGenerator implements FileUtil {
             // project will ensure wsdl directory is at root of ZIP
             def relativeWsdl = wsdlDir.toPath().relativize(wsdlPath.toPath()).toString()
             def fileXml = outputFile.text
+            def newListenerPrefix = insertApiNameInListenerPath ? "/${apiName}/${version}" :
+                    "/${version}"
             fileXml = fileXml.replaceAll(listenerPattern,
-                                         "<http:listener path=\"/${apiName}/${version}\$1\"")
+                                         "<http:listener path=\"${newListenerPrefix}\$1\"")
                     .replace('<apikit-soap:config',
                              '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
                     .replace(wsdlPath.absolutePath,

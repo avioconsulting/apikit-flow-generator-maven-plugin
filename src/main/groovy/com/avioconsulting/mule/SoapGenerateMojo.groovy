@@ -32,8 +32,12 @@ class SoapGenerateMojo extends AbstractMojo {
     @Parameter(property = 'http.listener.config.name', required = true)
     private String httpListenerConfigName
 
-    @Parameter(property = 'mule.xml.insert.before.router')
+    @Parameter(property = 'apikitgen.mule.xml.insert.before.router')
     private String insertXmlBeforeRouter
+
+    @Parameter(property = 'apikitgen.insert.api.name.in.listener.path',
+            defaultValue = 'true')
+    private boolean insertApiNameInListenerPath
 
     @Component
     protected MavenProject mavenProject
@@ -65,6 +69,7 @@ class SoapGenerateMojo extends AbstractMojo {
                                httpListenerConfigName,
                                wsdlService,
                                wsdlPort,
+                               insertApiNameInListenerPath,
                                insertXmlBeforeRouter)
     }
 }

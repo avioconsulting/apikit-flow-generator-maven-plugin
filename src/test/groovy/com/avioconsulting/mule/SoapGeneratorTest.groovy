@@ -51,14 +51,41 @@ class SoapGeneratorTest implements FileUtil {
                                'v1',
                                'theConfig',
                                'WeirdServiceName',
-                               'WeirdPortName')
+                               'WeirdPortName',
+                               true)
 
         // assert
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text.replace('\r', ''),
+        assertThat actual.text.replace('\r',
+                                       ''),
+                   is(equalTo(expected.text))
+    }
+
+    @Test
+    void newFile_noApiName_In_Listener() {
+        // arrange
+        writeMuleDeployProps()
+
+        // act
+        SoapGenerator.generate(tempDir,
+                               newWsdlPath,
+                               'foobar',
+                               'v1',
+                               'theConfig',
+                               'WeirdServiceName',
+                               'WeirdPortName',
+                               false)
+
+        // assert
+        def actual = new File(appDir,
+                              'input_v1.xml')
+        assert actual.exists()
+        def expected = new File('src/test/resources/expectedInput_No_ApiNameInPath.xml')
+        assertThat actual.text.replace('\r',
+                                       ''),
                    is(equalTo(expected.text))
     }
 
@@ -75,14 +102,16 @@ class SoapGeneratorTest implements FileUtil {
                                'theConfig',
                                'WeirdServiceName',
                                'WeirdPortName',
-                               '<foobar/>')
+                               true,
+                               '<foobar/>',)
 
         // assert
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
-        assertThat actual.text.replace('\r', ''),
+        assertThat actual.text.replace('\r',
+                                       ''),
                    is(equalTo(expected.text))
     }
 
@@ -98,6 +127,7 @@ class SoapGeneratorTest implements FileUtil {
                                'theConfig',
                                'WeirdServiceName',
                                'WeirdPortName',
+                               true,
                                '<foobar/>')
 
         // act
@@ -109,6 +139,7 @@ class SoapGeneratorTest implements FileUtil {
                                    'theConfig',
                                    'WeirdServiceName',
                                    'WeirdPortName',
+                                   true,
                                    '<foobar/>')
         }
 
@@ -126,6 +157,7 @@ class SoapGeneratorTest implements FileUtil {
             it.apiName = 'foobar'
             it.wsdlPath = newWsdlPath
             it.httpListenerConfigName = 'theConfig'
+            it.insertApiNameInListenerPath = true
             it.mavenProject = [
                     getBasedir: {
                         tempDir
@@ -142,7 +174,8 @@ class SoapGeneratorTest implements FileUtil {
                               'input_v1.xml')
         assert actual.exists()
         def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text.replace('\r', ''),
+        assertThat actual.text.replace('\r',
+                                       ''),
                    is(equalTo(expected.text))
     }
 
@@ -158,7 +191,8 @@ class SoapGeneratorTest implements FileUtil {
                                'v1',
                                'theConfig',
                                'WeirdServiceName',
-                               'WeirdPortName')
+                               'WeirdPortName',
+                               true)
 
         // assert
         def props = new Properties()
