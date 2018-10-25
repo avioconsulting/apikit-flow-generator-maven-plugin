@@ -21,25 +21,37 @@ class RestGeneratorTest implements FileUtil {
 
     @Before
     void setup() {
-        tempDir = join new File('build'), 'tmp', 'test'
+        tempDir = join new File('build'),
+                       'tmp',
+                       'test'
         if (tempDir.exists()) {
             tempDir.deleteDir()
         }
         tempDir.mkdirs()
-        mainDir = join tempDir, 'src', 'main'
+        mainDir = join tempDir,
+                       'src',
+                       'main'
         mainDir.mkdirs()
-        appDir = join mainDir, 'app'
+        appDir = join mainDir,
+                      'app'
         appDir.mkdirs()
-        apiDir = join mainDir, 'api'
+        apiDir = join mainDir,
+                      'api'
         apiDir.mkdirs()
-        def sourceFile = join new File('src'), 'test', 'resources', 'api-stuff-v1.raml'
-        FileUtils.copyFileToDirectory(sourceFile, apiDir)
+        def sourceFile = join new File('src'),
+                              'test',
+                              'resources',
+                              'api-stuff-v1.raml'
+        FileUtils.copyFileToDirectory(sourceFile,
+                                      apiDir)
     }
 
     Node getXmlNode(String xmlPath) {
-        def xmlFile = join appDir, xmlPath
+        def xmlFile = join appDir,
+                           xmlPath
         assert xmlFile.exists()
-        new XmlParser(false, true).parse(xmlFile)
+        new XmlParser(false,
+                      true).parse(xmlFile)
     }
 
     @Test
@@ -52,12 +64,33 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void generates_Flow_without_api_name() {
+        // arrange
+
+        // act
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               false,
+                               'theProject')
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def listeners = xmlNode.flow[http.listener].'@path'
+        assertThat listeners,
+                   is(equalTo(['/api/v1/*', '/console/v1/*']))
     }
 
     @Test
@@ -68,8 +101,10 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
-        def flowXmlFile = join(appDir, 'api-stuff-v1.xml')
+        def flowXmlFile = join(appDir,
+                               'api-stuff-v1.xml')
         assert flowXmlFile.exists()
         def existingFlowXmlContents = flowXmlFile.text
 
@@ -79,6 +114,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
@@ -90,7 +126,8 @@ class RestGeneratorTest implements FileUtil {
     void fixes_Raml_No() {
         // arrange
         def raml = 'api-stuff-v1.raml'
-        def ramlFile = join(apiDir, raml)
+        def ramlFile = join(apiDir,
+                            raml)
         def origRamlText = ramlFile.text
 
         // act
@@ -99,6 +136,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
@@ -110,7 +148,8 @@ class RestGeneratorTest implements FileUtil {
     void fixes_Raml_Yes() {
         // arrange
         def raml = 'api-stuff-v1.raml'
-        def ramlFile = join(apiDir, raml)
+        def ramlFile = join(apiDir,
+                            raml)
         def origRamlText = ramlFile.text
 
         // act
@@ -118,6 +157,7 @@ class RestGeneratorTest implements FileUtil {
                                raml,
                                'stuff',
                                'v1',
+                               true,
                                true,
                                'theProject')
 
@@ -137,7 +177,9 @@ class RestGeneratorTest implements FileUtil {
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
-                               false, 'theProject')
+                               false,
+                               true,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -154,7 +196,9 @@ class RestGeneratorTest implements FileUtil {
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
-                               false, 'theProject')
+                               false,
+                               true,
+                               'theProject')
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -174,6 +218,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
@@ -193,6 +238,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
@@ -213,6 +259,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
@@ -253,6 +300,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert
@@ -312,6 +360,7 @@ class RestGeneratorTest implements FileUtil {
                                'stuff',
                                'v1',
                                false,
+                               true,
                                'theProject')
 
         // assert

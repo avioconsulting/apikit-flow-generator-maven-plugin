@@ -32,15 +32,23 @@ class RestGenerator implements FileUtil {
                     String apiName,
                     String apiVersion,
                     boolean useCloudHub,
+                    boolean insertApiNameInListenerPath,
                     String mavenProjectName) {
         def apiBuilder = new ScaffolderAPI()
-        def mainDir = join(baseDirectory, 'src', 'main')
-        def ramlFile = join(mainDir, 'api', ramlPath)
+        def mainDir = join(baseDirectory,
+                           'src',
+                           'main')
+        def ramlFile = join(mainDir,
+                            'api',
+                            ramlPath)
         assert ramlFile.exists()
-        def appDirectory = join(mainDir, 'app')
-        def baseName = FileUtils.basename(ramlPath, '.raml')
+        def appDirectory = join(mainDir,
+                                'app')
+        def baseName = FileUtils.basename(ramlPath,
+                                          '.raml')
         def flowFileName = baseName + '.xml'
-        def flowFile = join(appDirectory, flowFileName)
+        def flowFile = join(appDirectory,
+                            flowFileName)
         if (flowFile.exists()) {
             // utility works best with a clean file
             if (!flowFile.delete()) {
@@ -57,14 +65,16 @@ class RestGenerator implements FileUtil {
                               apiName,
                               mavenProjectName)
         }
-        def flowPath = new File(appDirectory, flowFileName)
+        def flowPath = new File(appDirectory,
+                                flowFileName)
         assert flowPath.exists()
         // Mule's generator will use the RAML filename by convention
         def apiBaseName = FilenameUtils.getBaseName(ramlPath)
         alterGeneratedFlow(flowPath,
                            apiName,
                            apiVersion,
-                           apiBaseName)
+                           apiBaseName,
+                           insertApiNameInListenerPath)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -80,24 +90,28 @@ class RestGenerator implements FileUtil {
     private static void alterGeneratedFlow(File flowPath,
                                            String apiName,
                                            String apiVersion,
-                                           String apiBaseName) {
+                                           String apiBaseName,
+                                           boolean insertApiNameInListenerPath) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
         removeHttpListenerConfigs(rootElement)
         modifyHttpListeners(rootElement,
                             apiName,
-                            apiVersion)
+                            apiVersion,
+                            insertApiNameInListenerPath)
         parameterizeApiKitConfig(rootElement)
         addChoiceRouting(rootElement,
                          apiBaseName)
         def outputter = new XMLOutputter(Format.prettyFormat)
-        outputter.output(document, new FileWriter(flowPath))
+        outputter.output(document,
+                         new FileWriter(flowPath))
     }
 
     private static void addChoiceRouting(Element rootElement,
                                          String apiBaseName) {
-        def schemaLocation = rootElement.getAttribute('schemaLocation', xsi)
+        def schemaLocation = rootElement.getAttribute('schemaLocation',
+                                                      xsi)
         def existingSchemaLocations = schemaLocation.value.split(' ')
         existingSchemaLocations += [
                 'http://www.mulesoft.org/schema/mule/json',
@@ -108,18 +122,22 @@ class RestGenerator implements FileUtil {
         schemaLocation.value = existingSchemaLocations.join(' ')
         allowDetailedValidationInfo(rootElement)
         def lookFor = "${apiBaseName}-console"
-        def consoleFlow = rootElement.getChildren('flow', core).find { element ->
+        def consoleFlow = rootElement.getChildren('flow',
+                                                  core).find { element ->
             element.getAttribute('name').value == lookFor
         }
         assert consoleFlow: "Was looking for flow ${lookFor}"
-        def consoleElement = consoleFlow.getChild('console', apiKit)
+        def consoleElement = consoleFlow.getChild('console',
+                                                  apiKit)
         consoleFlow.removeContent(consoleElement)
         setupChoice(consoleFlow,
                     '${enable.apikit.console}') { Element when, Element otherwise ->
             when.addContent(consoleElement)
-            def payload = new Element('set-payload', core)
+            def payload = new Element('set-payload',
+                                      core)
             otherwise.addContent(payload)
-            payload.setAttribute('value', 'Resource not found')
+            payload.setAttribute('value',
+                                 'Resource not found')
             payload.setAttribute('name',
                                  'Error message to caller',
                                  doc)
@@ -127,26 +145,33 @@ class RestGenerator implements FileUtil {
     }
 
     private static void allowDetailedValidationInfo(Element rootElement) {
-        def mappingStrategy = rootElement.getChild('mapping-exception-strategy', apiKit)
+        def mappingStrategy = rootElement.getChild('mapping-exception-strategy',
+                                                   apiKit)
         assert mappingStrategy
-        def badRequestMapping = mappingStrategy.getChildren('mapping', apiKit).find { node ->
+        def badRequestMapping = mappingStrategy.getChildren('mapping',
+                                                            apiKit).find { node ->
             node.getAttribute('statusCode').value == '400'
         }
         assert badRequestMapping
-        def badRequestPayload = badRequestMapping.getChild('set-payload', core)
+        def badRequestPayload = badRequestMapping.getChild('set-payload',
+                                                           core)
         badRequestMapping.removeContent(badRequestPayload)
         setupChoice(badRequestMapping,
                     '${return.validation.failures}') { Element when, Element otherwise ->
-            def scriptingTransformer = new Element('transformer', scripting)
+            def scriptingTransformer = new Element('transformer',
+                                                   scripting)
             when.addContent(scriptingTransformer)
             scriptingTransformer.setAttribute('name',
                                               'Error Message Map',
                                               doc)
-            def script = new Element('script', scripting)
+            def script = new Element('script',
+                                     scripting)
             scriptingTransformer.addContent(script)
-            script.setAttribute('engine', 'Groovy')
+            script.setAttribute('engine',
+                                'Groovy')
             script.addContent(new CDATA('[error_details: exception.message]'))
-            def json = new Element('object-to-json-transformer', json)
+            def json = new Element('object-to-json-transformer',
+                                   json)
             when.addContent(json)
             json.setAttribute('name',
                               'Map to JSON',
@@ -162,22 +187,29 @@ class RestGenerator implements FileUtil {
     static def setupChoice(Element root,
                            String expression,
                            Closure closure) {
-        def choiceElement = new Element('choice', core)
+        def choiceElement = new Element('choice',
+                                        core)
         root.addContent(choiceElement)
-        def whenElement = new Element('when', core)
+        def whenElement = new Element('when',
+                                      core)
         choiceElement.addContent(whenElement)
-        whenElement.setAttribute('expression', expression)
-        def otherwise = new Element('otherwise', core)
+        whenElement.setAttribute('expression',
+                                 expression)
+        def otherwise = new Element('otherwise',
+                                    core)
         choiceElement.addContent(otherwise)
-        closure(whenElement, otherwise)
+        closure(whenElement,
+                otherwise)
     }
 
     private static boolean removeHttpListenerConfigs(Element rootElement) {
-        rootElement.removeChildren('listener-config', http)
+        rootElement.removeChildren('listener-config',
+                                   http)
     }
 
     private static void parameterizeApiKitConfig(Element flowNode) {
-        def apiKitConfig = flowNode.getChild('config', apiKit)
+        def apiKitConfig = flowNode.getChild('config',
+                                             apiKit)
         assert apiKitConfig
         // allow projects to control this via properties
         apiKitConfig.setAttribute('disableValidations',
@@ -186,10 +218,13 @@ class RestGenerator implements FileUtil {
 
     private static void modifyHttpListeners(Element flowNode,
                                             String apiName,
-                                            String apiVersion) {
-        def listeners = flowNode.getChildren('flow', core)
+                                            String apiVersion,
+                                            boolean insertApiNameInListenerPath) {
+        def listeners = flowNode.getChildren('flow',
+                                             core)
                 .collect { flow ->
-            flow.getChildren('listener', http)
+            flow.getChildren('listener',
+                             http)
         }.flatten()
         listeners.each { Element listener ->
             // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
@@ -201,7 +236,10 @@ class RestGenerator implements FileUtil {
             def listenerPathAttribute = listener.getAttribute('path')
             assert listenerPathAttribute
             def isConsole = listenerPathAttribute.value.contains('console')
-            def apiParts = [apiName]
+            def apiParts = []
+            if (insertApiNameInListenerPath) {
+                apiParts << apiName
+            }
             apiParts << (isConsole ? 'console' : 'api')
             apiParts += [apiVersion, '*']
             listenerPathAttribute.value = '/' + apiParts.join('/')

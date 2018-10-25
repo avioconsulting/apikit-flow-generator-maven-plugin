@@ -22,6 +22,10 @@ class RestGenerateMojo extends AbstractMojo {
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
     private boolean useCloudHub
 
+    @Parameter(property = 'apikitgen.insert.api.name.in.listener.path',
+            defaultValue = 'true')
+    private boolean insertApiNameInListenerPath
+
     @Component
     protected MavenProject mavenProject
 
@@ -32,6 +36,7 @@ class RestGenerateMojo extends AbstractMojo {
                                apiName,
                                currentApiVersion,
                                useCloudHub,
+                               insertApiNameInListenerPath,
                                mavenProject.artifactId)
     }
 }
