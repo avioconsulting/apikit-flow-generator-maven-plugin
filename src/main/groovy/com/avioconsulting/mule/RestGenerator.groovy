@@ -58,6 +58,7 @@ class RestGenerator implements FileUtil {
                 assert flowFile.delete()
             }
         }
+        // generates the flow
         apiBuilder.run([ramlFile],
                        appDirectory)
         if (useCloudHub) {
