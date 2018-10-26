@@ -35,7 +35,8 @@ class RestGenerator implements FileUtil {
                     String apiVersion,
                     boolean useCloudHub,
                     boolean insertApiNameInListenerPath,
-                    String mavenProjectName) {
+                    String mavenProjectName,
+                    String httpListenerConfigName) {
         def apiBuilder = new ScaffolderAPI()
         def mainDir = join(baseDirectory,
                            'src',
@@ -77,7 +78,8 @@ class RestGenerator implements FileUtil {
                            apiName,
                            apiVersion,
                            apiBaseName,
-                           insertApiNameInListenerPath)
+                           insertApiNameInListenerPath,
+                           httpListenerConfigName)
         def muleDeployProps = new Properties()
         def muleDeployPropsFile = new File(appDirectory,
                                            'mule-deploy.properties')
@@ -101,7 +103,8 @@ class RestGenerator implements FileUtil {
                                            String apiName,
                                            String apiVersion,
                                            String apiBaseName,
-                                           boolean insertApiNameInListenerPath) {
+                                           boolean insertApiNameInListenerPath,
+                                           String httpListenerConfigName) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
@@ -109,7 +112,8 @@ class RestGenerator implements FileUtil {
         modifyHttpListeners(rootElement,
                             apiName,
                             apiVersion,
-                            insertApiNameInListenerPath)
+                            insertApiNameInListenerPath,
+                            httpListenerConfigName)
         parameterizeApiKitConfig(rootElement)
         addChoiceRouting(rootElement,
                          apiBaseName)
@@ -229,7 +233,8 @@ class RestGenerator implements FileUtil {
     private static void modifyHttpListeners(Element flowNode,
                                             String apiName,
                                             String apiVersion,
-                                            boolean insertApiNameInListenerPath) {
+                                            boolean insertApiNameInListenerPath,
+                                            String httpListenerConfigName) {
         def listeners = flowNode.getChildren('flow',
                                              core)
                 .collect { flow ->
@@ -240,7 +245,7 @@ class RestGenerator implements FileUtil {
             // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
             def configRefAttribute = listener.getAttribute('config-ref')
             assert configRefAttribute
-            configRefAttribute.value = '${http.listener.config}'
+            configRefAttribute.value = httpListenerConfigName
             // want to be able to combine projects later, so be able to share a single listener config
             // by using paths
             def listenerPathAttribute = listener.getAttribute('path')

@@ -26,6 +26,9 @@ class RestGenerateMojo extends AbstractMojo {
             defaultValue = 'true')
     private boolean insertApiNameInListenerPath
 
+    @Parameter(property = 'http.listener.config.name', required = true)
+    private String httpListenerConfigName
+
     @Component
     protected MavenProject mavenProject
 
@@ -37,6 +40,7 @@ class RestGenerateMojo extends AbstractMojo {
                                currentApiVersion,
                                useCloudHub,
                                insertApiNameInListenerPath,
-                               mavenProject.artifactId)
+                               mavenProject.artifactId,
+                               httpListenerConfigName)
     }
 }

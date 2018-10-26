@@ -1,5 +1,6 @@
 # 6.5.0.6
 * Same change as 6.5.0.4 but for REST
+* Ensure REST allows changing the HTTP listener config name based on mojo properties
 
 # 6.5.0.5
 * Add an option to tweak whether app name is added to the listener path
