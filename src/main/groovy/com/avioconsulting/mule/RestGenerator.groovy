@@ -2,6 +2,7 @@ package com.avioconsulting.mule
 
 import org.apache.commons.io.FilenameUtils
 import org.codehaus.plexus.util.FileUtils
+import org.jdom2.CDATA
 import org.jdom2.Element
 import org.jdom2.Namespace
 import org.jdom2.input.SAXBuilder
@@ -170,7 +171,13 @@ class RestGenerator implements FileUtil {
         def setPayload = message.getChild('set-payload',
                                           ee)
         assert setPayload
-        // TODO: Don't need to remove the weave, just customize it to look @ properties
+        def dwLines = [
+                '%dw 2.0',
+                'output application/json',
+                '---',
+                "if (p('return.validation.failures')) {error_details: error.message} else {message: \"Bad request\"}"
+        ]
+        setPayload.setContent(new CDATA(dwLines.join('\n')))
     }
 
     static def setupChoice(Element root,
