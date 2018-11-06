@@ -295,7 +295,7 @@ class RestGeneratorTest implements FileUtil {
         def badRequestWeavePayloadNode = badRequestNode[ee.'transform'][ee.'message'][ee.'set-payload'][0] as Node
         def dwContents = badRequestWeavePayloadNode.value()[0]
         assertThat dwContents,
-                   is(equalTo('foobar'))
+                   is(equalTo('%dw 2.0\noutput application/json\n---\nif (p(\'return.validation.failures\')) {error_details: error.description} else {message: \"Bad request\"}'))
     }
 
     @Test

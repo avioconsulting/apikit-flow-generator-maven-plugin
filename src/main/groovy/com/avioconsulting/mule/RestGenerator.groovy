@@ -175,7 +175,7 @@ class RestGenerator implements FileUtil {
                 '%dw 2.0',
                 'output application/json',
                 '---',
-                "if (p('return.validation.failures')) {error_details: error.message} else {message: \"Bad request\"}"
+                "if (p('return.validation.failures')) {error_details: error.description} else {message: \"Bad request\"}"
         ]
         setPayload.setContent(new CDATA(dwLines.join('\n')))
     }
