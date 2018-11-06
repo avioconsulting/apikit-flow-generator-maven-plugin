@@ -33,17 +33,22 @@ class RestGeneratorTest implements FileUtil {
                        'main'
         mainDir.mkdirs()
         appDir = join mainDir,
-                      'app'
+                      'mule'
         appDir.mkdirs()
         apiDir = join mainDir,
                       'api'
         apiDir.mkdirs()
-        def sourceFile = join new File('src'),
-                              'test',
-                              'resources',
+        def testResources = join new File('src'),
+                                 'test',
+                                 'resources'
+        def sourceFile = join testResources,
                               'api-stuff-v1.raml'
         FileUtils.copyFileToDirectory(sourceFile,
                                       apiDir)
+        // scaffolder won't run without this
+        FileUtils.copyFileToDirectory(join(testResources,
+                                           'mule-artifact.json'),
+                                      tempDir)
     }
 
     Node getXmlNode(String xmlPath) {

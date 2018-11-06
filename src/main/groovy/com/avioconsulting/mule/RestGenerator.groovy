@@ -46,7 +46,7 @@ class RestGenerator implements FileUtil {
                             ramlPath)
         assert ramlFile.exists()
         def appDirectory = join(mainDir,
-                                'app')
+                                'mule')
         def baseName = FileUtils.basename(ramlPath,
                                           '.raml')
         def flowFileName = baseName + '.xml'
