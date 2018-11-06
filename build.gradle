@@ -156,7 +156,12 @@ dependencies {
     println "SOAP Scaffolder is ${soapScaffolder}"
     bundled files(soapScaffolder)
     compile 'org.mule.runtime:mule-api:1.1.3'
+    runtime "org.mule.raml:raml-parser-interface-impl-v2:1.1.7"
+    runtime 'org.mule.tools:mule-apikit-common:1.1.7'
     runtime 'jaxen:jaxen:1.1.4'
+    // transitive dependencies
+    runtime 'org.raml:raml-parser:0.8.27'
+    runtime 'org.raml:raml-parser-2:1.0.26'
     // indirect dependency
     provided 'org.apache.maven:maven-plugin-api:3.3.9'
     // direct
