@@ -5,8 +5,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
-import org.mule.soapkit.xml.generator.Scaffolder
-import org.mule.soapkit.xml.generator.model.buildables.SoapkitApiConfig
+import org.mule.soapkit.scaffolder.Scaffolder
 
 import java.util.regex.Pattern
 
@@ -25,9 +24,6 @@ class SoapGenerator implements FileUtil {
                          boolean insertApiNameInListenerPath,
                          String insertXmlBeforeRouter = null) {
         def wsdlPathStr = wsdlPath.absolutePath
-        def config = new SoapkitApiConfig(wsdlPathStr,
-                                          service,
-                                          port)
         def mainDir = join(baseDirectory,
                            'src',
                            'main')
@@ -52,7 +48,7 @@ class SoapGenerator implements FileUtil {
             tempDomain.text = domainXmlText
             def result = Scaffolder.instance.scaffold(outputFile,
                                                       wsdlPathStr,
-                                                      config,
+                                                      null, // was config
                                                       tempDomain.absolutePath)
             def outputter = new XMLOutputter()
             outputter.format = Format.getPrettyFormat()
