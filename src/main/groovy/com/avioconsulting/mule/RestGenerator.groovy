@@ -10,14 +10,12 @@ import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
 import org.mule.tools.apikit.ScaffolderAPI
 
-import static com.avioconsulting.mule.MuleDeployPropsCleaner.cleanProps
-
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
     public static final Namespace http = Namespace.getNamespace('http',
                                                                 'http://www.mulesoft.org/schema/mule/http')
     public static final Namespace apiKit = Namespace.getNamespace('apikit',
-                                                                  'http://www.mulesoft.org/schema/mule/apikit')
+                                                                  'http://www.mulesoft.org/schema/mule/mule-apikit')
     public static final Namespace xsi = Namespace.getNamespace('xsi',
                                                                'http://www.w3.org/2001/XMLSchema-instance')
     public static final Namespace scripting = Namespace.getNamespace('scripting',
@@ -80,13 +78,6 @@ class RestGenerator implements FileUtil {
                            apiBaseName,
                            insertApiNameInListenerPath,
                            httpListenerConfigName)
-        def muleDeployProps = new Properties()
-        def muleDeployPropsFile = new File(appDirectory,
-                                           'mule-deploy.properties')
-        muleDeployProps.load(new FileInputStream(muleDeployPropsFile))
-        muleDeployProps.store(new FileOutputStream(muleDeployPropsFile),
-                              'Updated by apikit flow generator plugin')
-        cleanProps(muleDeployPropsFile)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -115,8 +106,8 @@ class RestGenerator implements FileUtil {
                             insertApiNameInListenerPath,
                             httpListenerConfigName)
         parameterizeApiKitConfig(rootElement)
-        addChoiceRouting(rootElement,
-                         apiBaseName)
+//        addChoiceRouting(rootElement,
+//                         apiBaseName)
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document,
                          new FileWriter(flowPath))

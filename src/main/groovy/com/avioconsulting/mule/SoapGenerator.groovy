@@ -9,8 +9,6 @@ import org.mule.soapkit.scaffolder.Scaffolder
 
 import java.util.regex.Pattern
 
-import static com.avioconsulting.mule.MuleDeployPropsCleaner.cleanProps
-
 class SoapGenerator implements FileUtil {
     private static final Pattern listenerPattern = Pattern.compile(/<http:listener path="(.*?)"/)
 
