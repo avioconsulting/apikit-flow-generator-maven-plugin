@@ -108,6 +108,9 @@ clean.doLast {
     getSoapScaffolder()
 }
 
+// Maven plugin's mojo scanner has problems with certain classes when trying to generate plugin.xml based on class
+// scanning. Gradle is a bit more flexible and we can create a POM from our Gradle build, temporarily exclude
+// the dependencies that crash the mojo scanner, then re-enable them in the final product
 task pluginDescriptor(type: Exec) {
     def isWindows = Os.isFamily(Os.FAMILY_WINDOWS)
     def isChocolately = isWindows && 'mvn --version'.execute().waitFor() == 0
@@ -117,6 +120,14 @@ task pluginDescriptor(type: Exec) {
         mvn = whereCommand.execute().text.trim()
     }
     commandLine mvn, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
+    def dependenciesMavenDescriptorPluginDoesNotLike = ['mule-api', 'mule-apikit-common', 'raml-parser-interface-impl-v2', 'raml-parser', 'raml-parser-2']
+    def getDependencyNode = { pomNode, dependencyName ->
+        pomNode.dependencies.dependency.find { d ->
+            def value = d.artifactId[0].value()[0]
+            value == dependencyName
+        }
+    }
+    def existingScope = null
     doFirst {
         def pom = project.file('pom.xml')
         install.repositories.mavenInstaller.pom.writeTo(pom)
@@ -133,10 +144,24 @@ task pluginDescriptor(type: Exec) {
         def muleReleasesRepo = repositories.appendNode('repository')
         muleReleasesRepo.appendNode('id', 'mulesoft-releases')
         muleReleasesRepo.appendNode('url', 'http://repository.mulesoft.org/releases/')
+        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
+            getDependencyNode(pomNode, name)
+        }.each { dependency ->
+            existingScope = dependency.scope[0].value()[0]
+            dependency.scope[0].value = 'test'
+        }
         XmlUtil.serialize(pomNode, new FileWriter(pom))
     }
 
     doLast {
+        def pom = project.file('pom.xml')
+        Node pomNode = new XmlParser().parse(pom)
+        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
+            getDependencyNode(pomNode, name)
+        }.each { dependency ->
+            dependency.scope[0].value = existingScope
+        }
+        XmlUtil.serialize(pomNode, new FileWriter(pom))
         final pluginDescriptor = new File((File) project.compileGroovy.destinationDir, 'META-INF/maven/plugin.xml')
         assert pluginDescriptor.file, "[$pluginDescriptor.canonicalPath] was not created"
         println "Plugin descriptor file:$pluginDescriptor.canonicalPath is created successfully"
