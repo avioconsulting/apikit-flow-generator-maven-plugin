@@ -106,8 +106,8 @@ class RestGenerator implements FileUtil {
                             insertApiNameInListenerPath,
                             httpListenerConfigName)
         parameterizeApiKitConfig(rootElement)
-//        addChoiceRouting(rootElement,
-//                         apiBaseName)
+        addChoiceRouting(rootElement,
+                         apiBaseName)
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document,
                          new FileWriter(flowPath))
@@ -125,7 +125,7 @@ class RestGenerator implements FileUtil {
                 'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
         ]
         schemaLocation.value = existingSchemaLocations.join(' ')
-        allowDetailedValidationInfo(rootElement)
+        //allowDetailedValidationInfo(rootElement)
         def lookFor = "${apiBaseName}-console"
         def consoleFlow = rootElement.getChildren('flow',
                                                   core).find { element ->
@@ -135,8 +135,13 @@ class RestGenerator implements FileUtil {
         def consoleElement = consoleFlow.getChild('console',
                                                   apiKit)
         consoleFlow.removeContent(consoleElement)
+        def errorHandler = consoleFlow.getChild('error-handler',
+                                                core)
+        assert errorHandler: 'Expected to find error handler here'
+        consoleFlow.removeContent(errorHandler)
         setupChoice(consoleFlow,
-                    '${enable.apikit.console}') { Element when, Element otherwise ->
+                    '${enable.apikit.console}') { Element when,
+                                                  Element otherwise ->
             when.addContent(consoleElement)
             def payload = new Element('set-payload',
                                       core)
@@ -147,6 +152,7 @@ class RestGenerator implements FileUtil {
                                  'Error message to caller',
                                  doc)
         }
+        consoleFlow.addContent(errorHandler)
     }
 
     private static void allowDetailedValidationInfo(Element rootElement) {

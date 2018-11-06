@@ -419,7 +419,8 @@ class RestGeneratorTest implements FileUtil {
         assertThat getChildNodeNames(flowNode),
                    is(equalTo([
                            'listener',
-                           'choice'
+                           'choice',
+                           'error-handler'
                    ]))
         def choice = flowNode.choice[0]
         assert choice
