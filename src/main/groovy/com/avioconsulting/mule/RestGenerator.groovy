@@ -2,7 +2,6 @@ package com.avioconsulting.mule
 
 import org.apache.commons.io.FilenameUtils
 import org.codehaus.plexus.util.FileUtils
-import org.jdom2.CDATA
 import org.jdom2.Element
 import org.jdom2.Namespace
 import org.jdom2.input.SAXBuilder
@@ -172,32 +171,7 @@ class RestGenerator implements FileUtil {
                                                          ee)
         assert badRequestWeave
         badRequestHandler.removeContent(badRequestWeave)
-        setupChoice(badRequestHandler,
-                    '${return.validation.failures}') { Element when, Element otherwise ->
-            def scriptingTransformer = new Element('transformer',
-                                                   scripting)
-            when.addContent(scriptingTransformer)
-            scriptingTransformer.setAttribute('name',
-                                              'Error Message Map',
-                                              doc)
-            def script = new Element('script',
-                                     scripting)
-            scriptingTransformer.addContent(script)
-            script.setAttribute('engine',
-                                'Groovy')
-            script.addContent(new CDATA('[error_details: exception.message]'))
-            def json = new Element('object-to-json-transformer',
-                                   json)
-            when.addContent(json)
-            json.setAttribute('name',
-                              'Map to JSON',
-                              doc)
-
-            otherwise.addContent(badRequestPayload)
-            badRequestPayload.setAttribute('name',
-                                           'Obfuscate error',
-                                           doc)
-        }
+        // TODO: Don't need to remove the weave, just customize it to look @ properties
     }
 
     static def setupChoice(Element root,
