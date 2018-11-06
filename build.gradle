@@ -120,7 +120,13 @@ task pluginDescriptor(type: Exec) {
         mvn = whereCommand.execute().text.trim()
     }
     commandLine mvn, '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
-    def dependenciesMavenDescriptorPluginDoesNotLike = ['mule-api', 'mule-apikit-common', 'raml-parser-interface-impl-v2', 'raml-parser', 'raml-parser-2']
+    def dependenciesMavenDescriptorPluginDoesNotLike = [
+            'mule-api',
+            'mule-apikit-common',
+            'raml-parser-interface-impl-v2',
+            'raml-parser',
+            'raml-parser-2'
+    ]
     def getDependencyNode = { pomNode, dependencyName ->
         pomNode.dependencies.dependency.find { d ->
             def value = d.artifactId[0].value()[0]
