@@ -6,8 +6,8 @@ echo "Pushing to general AVIO Nexus"
 
 echo "Updating AVIO DFW bitbucket repo"
 # AVIO Nexus
-git checkout dfw_from_outside_their_net
-git rebase master
+git checkout mule4.1/dfw_from_outside_their_net
+git rebase mule4.1/master
 git push --force
 
 echo "Pushing to AVIO Nexus DFW"
