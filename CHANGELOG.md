@@ -1,6 +1,10 @@
 # 7.x
 (for Studo 7/Mule 4.x)
-# 7.2.3.1
+
+## 7.3.0.1
+* Studio 7 support
+
+## 7.2.3.1
 * Initial release
 * SOAP is not tested yet (only REST)
 
