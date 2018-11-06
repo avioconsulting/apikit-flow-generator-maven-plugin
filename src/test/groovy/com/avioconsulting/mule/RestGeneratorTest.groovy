@@ -263,42 +263,6 @@ class RestGeneratorTest implements FileUtil {
                    is(equalTo('${skip.apikit.validation}'))
     }
 
-    @Test
-    void addsSchemaLocations_For_Choice_Additions() {
-        // arrange
-
-        // act
-        RestGenerator.generate(tempDir,
-                               'api-stuff-v1.raml',
-                               'stuff',
-                               'v1',
-                               false,
-                               true,
-                               'theProject',
-                               '${http.listener.config}')
-
-        // assert
-        def xmlNode = getXmlNode('api-stuff-v1.xml')
-        def schemaLocations = xmlNode.attribute(xsi.schemaLocation)
-                .split(' ')
-                .collect { l -> l as String }
-        assertThat schemaLocations,
-                   is(equalTo([
-                           'http://www.mulesoft.org/schema/mule/core',
-                           'http://www.mulesoft.org/schema/mule/core/current/mule.xsd',
-                           'http://www.mulesoft.org/schema/mule/http',
-                           'http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd',
-                           'http://www.mulesoft.org/schema/mule/apikit',
-                           'http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd',
-                           'http://www.springframework.org/schema/beans',
-                           'http://www.springframework.org/schema/beans/spring-beans-3.1.xsd',
-                           'http://www.mulesoft.org/schema/mule/json',
-                           'http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd',
-                           'http://www.mulesoft.org/schema/mule/scripting',
-                           'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
-                   ]))
-    }
-
     def getChildNodeNames(Node node) {
         node.children()
                 .collect { Node n -> n.name() as QName }

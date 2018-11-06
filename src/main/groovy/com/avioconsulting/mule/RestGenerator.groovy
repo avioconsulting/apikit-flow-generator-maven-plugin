@@ -114,16 +114,6 @@ class RestGenerator implements FileUtil {
 
     private static void addChoiceRouting(Element rootElement,
                                          String apiBaseName) {
-        def schemaLocation = rootElement.getAttribute('schemaLocation',
-                                                      xsi)
-        def existingSchemaLocations = schemaLocation.value.split(' ')
-        existingSchemaLocations += [
-                'http://www.mulesoft.org/schema/mule/json',
-                'http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd',
-                'http://www.mulesoft.org/schema/mule/scripting',
-                'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
-        ]
-        schemaLocation.value = existingSchemaLocations.join(' ')
         allowDetailedValidationInfo(rootElement,
                                     apiBaseName)
         def lookFor = "${apiBaseName}-console"
