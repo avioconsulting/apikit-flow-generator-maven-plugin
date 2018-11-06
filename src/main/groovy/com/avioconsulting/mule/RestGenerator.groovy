@@ -18,14 +18,10 @@ class RestGenerator implements FileUtil {
                                                                   'http://www.mulesoft.org/schema/mule/mule-apikit')
     public static final Namespace xsi = Namespace.getNamespace('xsi',
                                                                'http://www.w3.org/2001/XMLSchema-instance')
-    public static final Namespace scripting = Namespace.getNamespace('scripting',
-                                                                     'http://www.mulesoft.org/schema/mule/scripting')
-
     public static final Namespace doc = Namespace.getNamespace('doc',
                                                                'http://www.mulesoft.org/schema/mule/documentation')
-
-    public static final Namespace json = Namespace.getNamespace('json',
-                                                                'http://www.mulesoft.org/schema/mule/json')
+    public static final Namespace ee = Namespace.getNamespace('ee',
+                                                              'http://www.mulesoft.org/schema/mule/ee/core')
 
     static generate(File baseDirectory,
                     String ramlPath,
@@ -125,7 +121,8 @@ class RestGenerator implements FileUtil {
                 'http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd'
         ]
         schemaLocation.value = existingSchemaLocations.join(' ')
-        //allowDetailedValidationInfo(rootElement)
+        allowDetailedValidationInfo(rootElement,
+                                    apiBaseName)
         def lookFor = "${apiBaseName}-console"
         def consoleFlow = rootElement.getChildren('flow',
                                                   core).find { element ->
@@ -155,19 +152,27 @@ class RestGenerator implements FileUtil {
         consoleFlow.addContent(errorHandler)
     }
 
-    private static void allowDetailedValidationInfo(Element rootElement) {
-        def mappingStrategy = rootElement.getChild('mapping-exception-strategy',
-                                                   apiKit)
-        assert mappingStrategy
-        def badRequestMapping = mappingStrategy.getChildren('mapping',
-                                                            apiKit).find { node ->
-            node.getAttribute('statusCode').value == '400'
+    private static void allowDetailedValidationInfo(Element rootElement,
+                                                    String apiBaseName) {
+        def lookFor = "${apiBaseName}-main"
+        def routerFlow = rootElement.getChildren('flow',
+                                                 core).find { element ->
+            element.getAttribute('name').value == lookFor
         }
-        assert badRequestMapping
-        def badRequestPayload = badRequestMapping.getChild('set-payload',
-                                                           core)
-        badRequestMapping.removeContent(badRequestPayload)
-        setupChoice(badRequestMapping,
+        assert routerFlow: "Was looking for flow ${lookFor}"
+        def errorHandler = routerFlow.getChild('error-handler',
+                                               core)
+        assert errorHandler
+        def badRequestHandler = errorHandler.getChildren('on-error-propagate',
+                                                         core).find { element ->
+            element.getAttribute('type').value == 'APIKIT:BAD_REQUEST'
+        }
+        assert badRequestHandler
+        def badRequestWeave = badRequestHandler.getChild('transform',
+                                                         ee)
+        assert badRequestWeave
+        badRequestHandler.removeContent(badRequestWeave)
+        setupChoice(badRequestHandler,
                     '${return.validation.failures}') { Element when, Element otherwise ->
             def scriptingTransformer = new Element('transformer',
                                                    scripting)

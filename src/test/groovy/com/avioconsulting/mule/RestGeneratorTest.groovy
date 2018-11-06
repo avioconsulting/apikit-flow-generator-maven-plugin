@@ -15,9 +15,8 @@ class RestGeneratorTest implements FileUtil {
     private static Namespace http = new Namespace(RestGenerator.http.URI)
     public static final Namespace apiKit = new Namespace(RestGenerator.apiKit.URI)
     public static final Namespace xsi = new Namespace(RestGenerator.xsi.URI)
-    public static final Namespace scripting = new Namespace(RestGenerator.scripting.URI)
     public static final Namespace doc = new Namespace(RestGenerator.doc.URI)
-    public static final Namespace json = new Namespace(RestGenerator.json.URI)
+    public static final Namespace ee = new Namespace(RestGenerator.ee.URI)
 
     @Before
     void setup() {
