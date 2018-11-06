@@ -37,6 +37,7 @@ class RestGenerator implements FileUtil {
                            'src',
                            'main')
         def ramlFile = join(mainDir,
+                            'resources',
                             'api',
                             ramlPath)
         assert ramlFile.exists()

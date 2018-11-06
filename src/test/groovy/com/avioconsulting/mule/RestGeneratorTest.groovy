@@ -34,6 +34,7 @@ class RestGeneratorTest implements FileUtil {
                       'mule'
         appDir.mkdirs()
         apiDir = join mainDir,
+                      'resources',
                       'api'
         apiDir.mkdirs()
         def testResources = join new File('src'),
