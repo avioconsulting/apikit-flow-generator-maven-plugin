@@ -8,6 +8,7 @@ import org.jdom2.input.SAXBuilder
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
 import org.mule.tools.apikit.ScaffolderAPI
+import org.mule.tools.apikit.model.RuntimeEdition
 
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
@@ -56,7 +57,10 @@ class RestGenerator implements FileUtil {
         }
         // generates the flow
         apiBuilder.run([ramlFile],
-                       appDirectory)
+                       appDirectory,
+                       null,
+                       '4.1.3',
+                       RuntimeEdition.EE) // without runtime edition, we won't use weaves in the output
         if (useCloudHub) {
             adjustRamlBaseUri(ramlFile,
                               apiName,
