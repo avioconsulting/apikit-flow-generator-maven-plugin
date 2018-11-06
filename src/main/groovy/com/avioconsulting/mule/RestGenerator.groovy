@@ -164,7 +164,12 @@ class RestGenerator implements FileUtil {
         def badRequestWeave = badRequestHandler.getChild('transform',
                                                          ee)
         assert badRequestWeave
-        badRequestHandler.removeContent(badRequestWeave)
+        def message = badRequestWeave.getChild('message',
+                                               ee)
+        assert message
+        def setPayload = message.getChild('set-payload',
+                                          ee)
+        assert setPayload
         // TODO: Don't need to remove the weave, just customize it to look @ properties
     }
 

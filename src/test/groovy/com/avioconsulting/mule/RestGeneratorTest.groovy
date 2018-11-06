@@ -14,7 +14,6 @@ class RestGeneratorTest implements FileUtil {
     private File tempDir, appDir, mainDir, apiDir
     private static Namespace http = new Namespace(RestGenerator.http.URI)
     public static final Namespace apiKit = new Namespace(RestGenerator.apiKit.URI)
-    public static final Namespace xsi = new Namespace(RestGenerator.xsi.URI)
     public static final Namespace doc = new Namespace(RestGenerator.doc.URI)
     public static final Namespace ee = new Namespace(RestGenerator.ee.URI)
 
@@ -285,49 +284,18 @@ class RestGeneratorTest implements FileUtil {
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
-        def badRequestNode = xmlNode[apiKit.'mapping-exception-strategy'][apiKit.'mapping'].find { Node node ->
-            node.'@statusCode' == '400'
+        def flowNode = xmlNode.flow.find { Node node ->
+            node.'@name' == 'api-stuff-v1-main'
+        }
+        assert flowNode
+        def badRequestNode = flowNode['error-handler']['on-error-propagate'].find { Node node ->
+            node.'@type' == 'APIKIT:BAD_REQUEST'
         } as Node
         assert badRequestNode
-        assertThat getChildNodeNames(badRequestNode),
-                   is(equalTo([
-                           'exception',
-                           'set-property',
-                           'choice'
-                   ]))
-        def choice = badRequestNode.choice[0]
-        assert choice
-        def choiceWhen = choice.when[0] as Node
-        assert choiceWhen
-        assertThat choiceWhen.'@expression',
-                   is(equalTo('${return.validation.failures}'))
-        assertThat getChildNodeNames(choiceWhen),
-                   is(equalTo([
-                           'transformer',
-                           'object-to-json-transformer'
-                   ]))
-        def scriptTransformer = choiceWhen[scripting.'transformer'][0] as Node
-        assert scriptTransformer
-        assertThat scriptTransformer.attribute(doc.name),
-                   is(equalTo('Error Message Map'))
-        def script = scriptTransformer[scripting.'script'][0] as Node
-        assert script
-        assertThat script.'@engine',
-                   is(equalTo('Groovy'))
-        assertThat script.value()[0],
-                   is(equalTo('[error_details: exception.message]'))
-        def json = choiceWhen[json.'object-to-json-transformer'][0] as Node
-        assert json
-        assertThat json.attribute(doc.name),
-                   is(equalTo('Map to JSON'))
-        def otherwise = choice.otherwise[0] as Node
-        assert otherwise
-        def payload = otherwise['set-payload'][0] as Node
-        assert payload
-        assertThat payload['@value'],
-                   is(containsString('Bad request'))
-        assertThat payload.attribute(doc.name),
-                   is(equalTo('Obfuscate error'))
+        def badRequestWeavePayloadNode = badRequestNode[ee.'transform'][ee.'message'][ee.'set-payload'][0] as Node
+        def dwContents = badRequestWeavePayloadNode.value()[0]
+        assertThat dwContents,
+                   is(equalTo('foobar'))
     }
 
     @Test
