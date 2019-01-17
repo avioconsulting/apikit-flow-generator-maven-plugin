@@ -94,7 +94,7 @@ def getSoapScaffolder = {
     def jarFile = new File(files[0])
     return zipTree(jarFile).findAll {
         File file -> file.absolutePath.endsWith('mule-soapkit-scaffolder.jar')
-    } + [jarFile]
+    }
 }
 
 clean {
