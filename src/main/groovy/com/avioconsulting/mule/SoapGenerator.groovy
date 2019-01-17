@@ -1,10 +1,10 @@
 package com.avioconsulting.mule
 
-import com.avioconsulting.mule.resources.SoapResources
-import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
+import org.mule.runtime.app.declaration.api.ArtifactDeclaration
+import org.mule.runtime.app.declaration.api.fluent.ElementDeclarer
 import org.mule.soapkit.scaffolder.Scaffolder
 
 import java.util.regex.Pattern
@@ -37,19 +37,13 @@ class SoapGenerator implements FileUtil {
             // plugin currently duplicates existing files, so don't try and support this
             throw new Exception('You can only use this plugin to do the initial generation of flows from WSDL. Use Studio to perform updates!')
         }
-        outputFile.text = SoapResources.SOAP_TEMPLATE
-        def tempDomain = File.createTempFile('muledomain',
-                                             '.xml')
         try {
-            def domainXmlText = SoapResources.DOMAIN_TEMPLATE
-                    .replace('OUR_LISTENER_CONFIG',
-                             httpListenerConfigName)
-            tempDomain.text = domainXmlText
+            def emptyDomain = (ArtifactDeclaration) ElementDeclarer.newArtifact().getDeclaration()
             def result = Scaffolder.instance.scaffold(wsdlPathStr,
                                                       wsdlPathStr,
                                                       service,
                                                       port,
-                                                      null)
+                                                      emptyDomain)
             def outputter = new XMLOutputter()
             outputter.format = Format.getPrettyFormat()
             outputter.output(result,
@@ -86,7 +80,7 @@ class SoapGenerator implements FileUtil {
             cleanProps(muleDeployPropsFile)
         }
         finally {
-            FileUtils.forceDelete(tempDomain)
+
         }
     }
 }
