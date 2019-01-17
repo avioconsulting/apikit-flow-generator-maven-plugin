@@ -193,6 +193,9 @@ dependencies {
     // transitive dependencies
     runtime 'org.raml:raml-parser:0.8.28'
     runtime 'org.raml:raml-parser-2:1.0.27'
+    // transitive SOAP
+    runtime 'org.mule.tooling:mule-tooling-api:1.1.4'
+    runtime 'org.mule.wsdl:mule-wsdl-parser:1.2.1'
     // indirect dependency
     provided 'org.apache.maven:maven-plugin-api:3.3.9'
     // direct

@@ -26,7 +26,8 @@ class SoapGenerator implements FileUtil {
                            'src',
                            'main')
         def wsdlDir = join(mainDir,
-                           'wsdl')
+                           'resources',
+                           'api')
         def appDir = join(mainDir,
                           'app')
         def generatedFilenameOnly = "${FilenameUtils.getBaseName(wsdlPath.name)}_${version}.xml"
@@ -44,10 +45,11 @@ class SoapGenerator implements FileUtil {
                     .replace('OUR_LISTENER_CONFIG',
                              httpListenerConfigName)
             tempDomain.text = domainXmlText
-            def result = Scaffolder.instance.scaffold(outputFile,
+            def result = Scaffolder.instance.scaffold(wsdlPathStr,
                                                       wsdlPathStr,
-                                                      null, // was config
-                                                      tempDomain.absolutePath)
+                                                      service,
+                                                      port,
+                                                      null)
             def outputter = new XMLOutputter()
             outputter.format = Format.getPrettyFormat()
             outputter.output(result,
