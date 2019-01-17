@@ -6,6 +6,7 @@ import org.jdom2.output.XMLOutputter
 import org.mule.runtime.app.declaration.api.ArtifactDeclaration
 import org.mule.runtime.app.declaration.api.fluent.ElementDeclarer
 import org.mule.soapkit.scaffolder.Scaffolder
+import org.mule.tooling.soapkit.scaffolder.ArtifactDeclarationUtils
 
 import java.util.regex.Pattern
 
@@ -38,7 +39,7 @@ class SoapGenerator implements FileUtil {
             throw new Exception('You can only use this plugin to do the initial generation of flows from WSDL. Use Studio to perform updates!')
         }
         try {
-            def emptyDomain = (ArtifactDeclaration) ElementDeclarer.newArtifact().getDeclaration()
+            def emptyDomain = ArtifactDeclarationUtils.emptyDeclaration()
             def result = Scaffolder.instance.scaffold(wsdlPathStr,
                                                       wsdlPathStr,
                                                       service,
