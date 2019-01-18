@@ -61,6 +61,7 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
+        //new File('src/test/resources','expectedInput.xml').text = actual.text
         assertThat Input.fromFile(actual),
                    matches('expectedInput.xml')
     }
