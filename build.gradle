@@ -117,6 +117,14 @@ def getToolingCoreLib = {
     new File(files[0])
 }
 
+def getToolingUtilLib = {
+    def studioDir = getStudioPluginsDir()
+    def files = new FileNameFinder().getFileNames("${studioDir}/plugins",
+                                                  "org.mule.tooling.utils_*")
+    assert files.size() == 1: "Expected only 1 file in ${files}"
+    new File(files[0])
+}
+
 clean {
     // this is a generated artifact
     delete 'pom.xml'
@@ -207,9 +215,9 @@ task pluginDescriptor(type: Exec) {
     }
 }
 
-compileGroovy.doLast {
-    pluginDescriptor.execute()
-}
+// compileGroovy.doLast {
+//     pluginDescriptor.execute()
+// }
 
 dependencies {
     def scaffolder = getRestScaffolder()
@@ -218,14 +226,14 @@ dependencies {
     bundled files(scaffolder.absolutePath)
     def soapScaffolder = getSoapScaffolder()
     println "SOAP Scaffolder is ${soapScaffolder}"
-    bundled files(soapScaffolder)    
+    bundled files(soapScaffolder)
     compile 'org.mule.runtime:mule-api:1.1.3'
     runtime "org.mule.raml:raml-parser-interface-impl-v2:1.1.9"
     runtime 'org.mule.tools:mule-apikit-common:1.1.9'
     runtime 'jaxen:jaxen:1.1.4'
     // transitive dependencies
     runtime 'org.raml:raml-parser:0.8.28'
-    runtime 'org.raml:raml-parser-2:1.0.27'    
+    runtime 'org.raml:raml-parser-2:1.0.27'
     // transitive SOAP
     runtime 'org.mule.tooling:mule-tooling-api:1.1.4'
     runtime 'org.mule.wsdl:mule-wsdl-parser:1.2.1'
@@ -236,6 +244,15 @@ dependencies {
     def toolingCore = getToolingCoreLib()
     println "Tooling core is ${toolingCore}"
     bundled files(toolingCore)
+    def toolingUtil = getToolingUtilLib()
+    println "Tooling util is ${toolingUtil}"
+    bundled files(toolingUtil)
+    compile 'commons-collections:commons-collections:3.2.2'
+    // https://mvnrepository.com/artifact/dom4j/dom4j
+    compile group: 'dom4j', name: 'dom4j', version: '1.6.1'
+    compile group: 'org.eclipse.jdt',
+            name: 'core',
+            version: '3.3.0-v_771'
     // indirect dependency
     provided 'org.apache.maven:maven-plugin-api:3.3.9'
     // direct

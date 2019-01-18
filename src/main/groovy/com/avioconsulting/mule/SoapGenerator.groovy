@@ -45,6 +45,9 @@ class SoapGenerator implements FileUtil {
                                                       service,
                                                       port,
                                                       emptyDomain)
+            def project = new MuleAppProject()
+            ArtifactDeclarationUtils.serializeDeclaration(project,
+                                                          result)
             def outputter = new XMLOutputter()
             outputter.format = Format.getPrettyFormat()
             outputter.output(result,
