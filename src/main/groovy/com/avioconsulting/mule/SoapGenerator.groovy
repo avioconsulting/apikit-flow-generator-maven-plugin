@@ -3,6 +3,8 @@ package com.avioconsulting.mule
 import com.avioconsulting.mule.resources.SoapResources
 import org.apache.commons.io.FilenameUtils
 
+import javax.wsdl.factory.WSDLFactory
+
 class SoapGenerator implements FileUtil {
     static void generate(File baseDirectory,
                          File wsdlPath,
@@ -29,12 +31,25 @@ class SoapGenerator implements FileUtil {
             // plugin currently duplicates existing files, so don't try and support this
             throw new Exception('You can only use this plugin to do the initial generation of flows from WSDL. Use Studio to perform updates!')
         }
+        def wsdlFactory = WSDLFactory.newInstance()
+        def reader = wsdlFactory.newWSDLReader()
+        def definition = reader.readWSDL(wsdlPath.absolutePath)
+        def bindings = definition.bindings.values()
+        def operationNames = bindings.collect { binding ->
+            binding.bindingOperations
+        }.flatten()
+                .collect { o ->
+            o.name as String
+        }
+        def operationFlows = operationNames.collect { operationName ->
+            SoapResources.OPERATION_TEMPLATE.replaceAll('OPERATION_NAME',
+                                                        operationName)
+        }.join('\n')
         outputFile.text = SoapResources.HEADER +
                 '\n' +
                 SoapResources.MAIN_FLOW +
                 '\n' +
-                SoapResources.OPERATION_TEMPLATE +
-                '\n' +
+                operationFlows +
                 SoapResources.FOOTER
         // don't want an absolute path in here, need it relative to src/main/wsdl
         // project will ensure wsdl directory is at root of ZIP

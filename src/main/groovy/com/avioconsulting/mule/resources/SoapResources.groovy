@@ -41,7 +41,7 @@ class SoapResources {
             '    body: {\n' +
             '        soap#Fault: {\n' +
             '            faultcode: "soap:Server",\n' +
-            '            faultstring: "Operation [operation1:\\soapkit-config] not implemented"\n' +
+            '            faultstring: "Operation [OPERATION_NAME:\\soapkit-config] not implemented"\n' +
             '        }\n' +
             '    } write "application/xml"\n' +
             '}]]></ee:set-payload>\n' +
