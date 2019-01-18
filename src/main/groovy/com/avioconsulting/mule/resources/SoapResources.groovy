@@ -30,6 +30,8 @@ class SoapResources {
             '        </apikit-soap:router>\n' +
             '    </flow>'
 
+    static final String APIKIT_CONFIG = '<apikit-soap:config name="soapkit-config" port="PORT_NAME" service="SERVICE_NAME" wsdlLocation="WSDL_LOCATION" inboundValidationEnabled="${validate.soap.requests}"/>'
+
     static final String OPERATION_TEMPLATE = '<flow name="OPERATION_NAME:\\soapkit-config">\n' +
             '        <ee:transform>\n' +
             '            <ee:message>\n' +

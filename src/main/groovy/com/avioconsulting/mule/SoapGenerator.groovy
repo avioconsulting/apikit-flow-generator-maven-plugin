@@ -41,12 +41,21 @@ class SoapGenerator implements FileUtil {
             SoapResources.OPERATION_TEMPLATE.replaceAll('OPERATION_NAME',
                                                         operationName)
         }.join('\n')
+        def config = SoapResources.APIKIT_CONFIG
+                .replaceAll('PORT_NAME',
+                            port)
+                .replaceAll('SERVICE_NAME',
+                            service)
+                .replaceAll('WSDL_LOCATION',
+                            wsdlPath.name)
         def mainFlow = SoapResources.MAIN_FLOW
                 .replaceAll('THE_LISTENER_CONFIG',
                             httpListenerConfigName)
                 .replaceAll('THE_LISTENER_PATH',
                             "/${apiName}/${version}/${service}/${port}")
         outputFile.text = SoapResources.HEADER +
+                '\n' +
+                config +
                 '\n' +
                 mainFlow +
                 '\n' +
