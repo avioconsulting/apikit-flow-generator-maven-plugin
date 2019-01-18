@@ -15,13 +15,9 @@ class SoapGenerator implements FileUtil {
                          String port,
                          boolean insertApiNameInListenerPath,
                          String insertXmlBeforeRouter = null) {
-        def wsdlPathStr = wsdlPath.absolutePath
         def mainDir = join(baseDirectory,
                            'src',
                            'main')
-        def wsdlDir = join(mainDir,
-                           'resources',
-                           'api')
         def appDir = join(mainDir,
                           'mule')
         def generatedFilenameOnly = "${FilenameUtils.getBaseName(wsdlPath.name)}_${version}.xml"
@@ -45,24 +41,18 @@ class SoapGenerator implements FileUtil {
             SoapResources.OPERATION_TEMPLATE.replaceAll('OPERATION_NAME',
                                                         operationName)
         }.join('\n')
+        def mainFlow = SoapResources.MAIN_FLOW
+                .replaceAll('THE_LISTENER_CONFIG',
+                            httpListenerConfigName)
+                .replaceAll('THE_LISTENER_PATH',
+                            "/${apiName}/${version}/${service}/${port}")
         outputFile.text = SoapResources.HEADER +
                 '\n' +
-                SoapResources.MAIN_FLOW +
+                mainFlow +
                 '\n' +
                 operationFlows +
                 SoapResources.FOOTER
-        // don't want an absolute path in here, need it relative to src/main/wsdl
-        // project will ensure wsdl directory is at root of ZIP
-        def relativeWsdl = wsdlDir.toPath().relativize(wsdlPath.toPath()).toString()
         def fileXml = outputFile.text
-        def newListenerPrefix = insertApiNameInListenerPath ? "/${apiName}/${version}" :
-                "/${version}"
-//            fileXml = fileXml.replaceAll(listenerPattern,
-//                                         "<http:listener path=\"${newListenerPrefix}\$1\"")
-//                    .replace('<apikit-soap:config',
-//                             '<apikit-soap:config inboundValidationMessage="${validate.soap.requests}"')
-//                    .replace(wsdlPath.absolutePath,
-//                             relativeWsdl)
         if (insertXmlBeforeRouter) {
             fileXml = fileXml.replace('<apikit-soap:router',
                                       "${insertXmlBeforeRouter}\r\n    <apikit-soap:router")
