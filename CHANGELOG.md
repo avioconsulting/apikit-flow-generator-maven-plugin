@@ -1,6 +1,9 @@
 # 7.x
 (for Studo 7/Mule 4.x)
 
+## 7.3.0.2
+* Fix SOAP generation
+
 ## 7.3.0.1
 * Studio 7 support
 
