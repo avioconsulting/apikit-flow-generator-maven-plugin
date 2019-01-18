@@ -5,6 +5,7 @@ import org.apache.commons.io.FilenameUtils
 
 import javax.wsdl.factory.WSDLFactory
 
+// Implemented this by hand because the Studio 7.x/Mule 4.x SOAP generator scaffolds have heavy Eclipse dependencies
 class SoapGenerator implements FileUtil {
     static void generate(File baseDirectory,
                          File wsdlPath,
