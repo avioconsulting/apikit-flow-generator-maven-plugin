@@ -1,6 +1,5 @@
 package com.avioconsulting.mule
 
-
 import org.apache.commons.io.FileUtils
 import org.apache.maven.project.MavenProject
 import org.junit.Before
@@ -9,7 +8,8 @@ import org.xmlunit.builder.Input
 import org.xmlunit.matchers.CompareMatcher
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 class SoapGeneratorTest implements FileUtil {
@@ -90,10 +90,8 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput_No_ApiNameInPath.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text.trim()))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput_No_ApiNameInPath.xml')
     }
 
     @Test
@@ -115,10 +113,8 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput_insertBeforeRouter.xml')
     }
 
     @Test
@@ -177,9 +173,7 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput.xml')
     }
 }

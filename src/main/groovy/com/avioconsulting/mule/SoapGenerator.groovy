@@ -41,6 +41,8 @@ class SoapGenerator implements FileUtil {
             SoapResources.OPERATION_TEMPLATE.replaceAll('OPERATION_NAME',
                                                         operationName)
         }.join('\n')
+        def newListenerPrefix = insertApiNameInListenerPath ? "/${apiName}/${version}" :
+                "/${version}"
         def config = SoapResources.APIKIT_CONFIG
                 .replaceAll('PORT_NAME',
                             port)
@@ -52,7 +54,7 @@ class SoapGenerator implements FileUtil {
                 .replaceAll('THE_LISTENER_CONFIG',
                             httpListenerConfigName)
                 .replaceAll('THE_LISTENER_PATH',
-                            "/${apiName}/${version}/${service}/${port}")
+                            "${newListenerPrefix}/${service}/${port}")
         outputFile.text = SoapResources.HEADER +
                 '\n' +
                 config +
