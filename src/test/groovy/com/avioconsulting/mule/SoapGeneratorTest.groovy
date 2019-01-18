@@ -1,9 +1,12 @@
 package com.avioconsulting.mule
 
+
 import org.apache.commons.io.FileUtils
 import org.apache.maven.project.MavenProject
 import org.junit.Before
 import org.junit.Test
+import org.xmlunit.builder.Input
+import org.xmlunit.matchers.CompareMatcher
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.hamcrest.Matchers.*
@@ -58,10 +61,14 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput.xml')
+    }
+
+    static CompareMatcher matches(String resourcePath) {
+        CompareMatcher.isSimilarTo(new File(new File('src/test/resources'),
+                                            resourcePath))
+                .normalizeWhitespace()
     }
 
     @Test
