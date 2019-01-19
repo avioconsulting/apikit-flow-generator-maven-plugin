@@ -4,9 +4,12 @@ import org.apache.commons.io.FileUtils
 import org.apache.maven.project.MavenProject
 import org.junit.Before
 import org.junit.Test
+import org.xmlunit.builder.Input
+import org.xmlunit.matchers.CompareMatcher
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 
 class SoapGeneratorTest implements FileUtil {
@@ -26,10 +29,11 @@ class SoapGeneratorTest implements FileUtil {
                        'main'
         mainDir.mkdirs()
         appDir = join mainDir,
-                      'app'
+                      'mule'
         appDir.mkdirs()
         wsdlDir = join mainDir,
-                       'wsdl'
+                       'resources',
+                       'api'
         wsdlDir.mkdirs()
         FileUtils.copyFileToDirectory(new File('src/test/resources/wsdl/input.wsdl'),
                                       wsdlDir)
@@ -42,7 +46,6 @@ class SoapGeneratorTest implements FileUtil {
     @Test
     void newFile_explicit_svc() {
         // arrange
-        writeMuleDeployProps()
 
         // act
         SoapGenerator.generate(tempDir,
@@ -58,16 +61,20 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text))
+        //new File('src/test/resources','expectedInput.xml').text = actual.text
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput.xml')
+    }
+
+    static CompareMatcher matches(String resourcePath) {
+        CompareMatcher.isSimilarTo(new File(new File('src/test/resources'),
+                                            resourcePath))
+                .normalizeWhitespace()
     }
 
     @Test
     void newFile_noApiName_In_Listener() {
         // arrange
-        writeMuleDeployProps()
 
         // act
         SoapGenerator.generate(tempDir,
@@ -83,16 +90,13 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput_No_ApiNameInPath.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text.trim()))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput_No_ApiNameInPath.xml')
     }
 
     @Test
-    void newFile_explicit_svc_insert_xml() {
+    void newFile_explicit_svc_insert_xml_before() {
         // arrange
-        writeMuleDeployProps()
 
         // act
         SoapGenerator.generate(tempDir,
@@ -109,16 +113,37 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput_insertBeforeRouter.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput_insertBeforeRouter.xml')
+    }
+
+    @Test
+    void newFile_explicit_svc_insert_xml_after() {
+        // arrange
+
+        // act
+        SoapGenerator.generate(tempDir,
+                               newWsdlPath,
+                               'foobar',
+                               'v1',
+                               'theConfig',
+                               'WeirdServiceName',
+                               'WeirdPortName',
+                               true,
+                               null,
+                               '<foobar/>',)
+
+        // assert
+        def actual = new File(appDir,
+                              'input_v1.xml')
+        assert actual.exists()
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput_insertAfterRouter.xml')
     }
 
     @Test
     void existing() {
         // arrange
-        writeMuleDeployProps()
         // do our first generation, then we'll do it again and results should be the same
         SoapGenerator.generate(tempDir,
                                newWsdlPath,
@@ -151,7 +176,6 @@ class SoapGeneratorTest implements FileUtil {
     @Test
     void via_mojo_implicit() {
         // arrange
-        writeMuleDeployProps()
         def mojo = new SoapGenerateMojo().with {
             it.apiVersion = 'v1'
             it.apiName = 'foobar'
@@ -173,51 +197,7 @@ class SoapGeneratorTest implements FileUtil {
         def actual = new File(appDir,
                               'input_v1.xml')
         assert actual.exists()
-        def expected = new File('src/test/resources/expectedInput.xml')
-        assertThat actual.text.replace('\r',
-                                       ''),
-                   is(equalTo(expected.text))
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput.xml')
     }
-
-    @Test
-    void muleDeployProperties() {
-        // arrange
-        writeMuleDeployProps()
-
-        // act
-        SoapGenerator.generate(tempDir,
-                               newWsdlPath,
-                               'foobar',
-                               'v1',
-                               'theConfig',
-                               'WeirdServiceName',
-                               'WeirdPortName',
-                               true)
-
-        // assert
-        def props = new Properties()
-        def propsFile = new File(appDir,
-                                 'mule-deploy.properties')
-        def lines = propsFile.text.split('\n')
-        assertThat lines[0],
-                   is(equalTo('#Updated by apikit flow generator plugin'))
-        assertThat 'Expect this to be resources and not dates to ease things like archetype testing',
-                   lines[1],
-                   is(startsWith('config.resources'))
-        props.load(new FileInputStream(propsFile))
-        assertThat props.getProperty('config.resources'),
-                   is(equalTo('global.xml,input_v1.xml'))
-    }
-
-    private writeMuleDeployProps() {
-        def props = new Properties()
-        props.setProperty('config.resources',
-                          'global.xml')
-        def propsFile = new File(appDir,
-                                 'mule-deploy.properties')
-        props.store(new FileOutputStream(propsFile),
-                    'comments')
-        [props, propsFile]
-    }
-
 }
