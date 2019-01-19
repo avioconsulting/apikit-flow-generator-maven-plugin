@@ -30,10 +30,10 @@ class SoapResources {
             '        </apikit-soap:router>\n' +
             '        <ee:transform doc:name="Fault Detect">\n' +
             '           <ee:variables>\n' +
-            '              <ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0'+
-            'output application/java' +
+            '              <ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0\n'+
+            'output application/java\n' +
             '---\n' +
-            '// Mule 4 SOAP services seem to mostly handle SOAP faults OK but they are not returning a 500 when they return a fault' +
+            '// Mule 4 SOAP services seem to mostly handle SOAP faults OK but they are not returning a 500 when they return a fault\n' +
             'if (payload contains "<soap:Fault>") 500 else 200]]></ee:set-variable>\n' +
             '           </ee:variables>\n' +
             '        </ee:transform>\n' +
