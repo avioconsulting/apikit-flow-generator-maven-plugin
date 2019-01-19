@@ -7,7 +7,7 @@ class SoapResources {
 
     static final String MAIN_FLOW = '<flow name="api-main">\n' +
             '        <http:listener config-ref="THE_LISTENER_CONFIG" path="THE_LISTENER_PATH">\n' +
-            '            <http:response>\n' +
+            '            <http:response statusCode="#[vars.httpStatus default 200]">\n' +
             '                <http:body>#[payload]</http:body>\n' +
             '                <http:headers>#[attributes.protocolHeaders default {}]</http:headers>\n' +
             '            </http:response>\n' +
@@ -28,6 +28,15 @@ class SoapResources {
             '                  queryString: attributes.queryString\n' +
             '            }]</apikit-soap:attributes>\n' +
             '        </apikit-soap:router>\n' +
+            '        <ee:transform doc:name="Fault Detect">\n' +
+            '           <ee:variables>\n' +
+            '              <ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0'+
+            'output application/java' +
+            '---\n' +
+            '// Mule 4 SOAP services seem to mostly handle SOAP faults OK but they are not returning a 500 when they return a fault' +
+            'if (payload contains "<soap:Fault>") 500 else 200]]></ee:set-variable>\n' +
+            '           </ee:variables>\n' +
+            '        </ee:transform>\n' +
             '    </flow>'
 
     static final String APIKIT_CONFIG = '<apikit-soap:config name="soapkit-config" port="PORT_NAME" service="SERVICE_NAME" wsdlLocation="WSDL_LOCATION" inboundValidationEnabled="${validate.soap.requests}"/>'

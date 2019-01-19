@@ -3,8 +3,8 @@
   <apikit-soap:config name="soapkit-config" port="WeirdPortName" service="WeirdServiceName" wsdlLocation="input.wsdl" inboundValidationEnabled="${validate.soap.requests}"/>
   <flow name="api-main">
     <http:listener config-ref="theConfig" path="/v1/WeirdServiceName/WeirdPortName">
-      <http:response>
-        <http:body>#[payload]</http:body>
+      <http:response statusCode="#[vars.httpStatus default 200]">
+      <http:body>#[payload]</http:body>
         <http:headers>#[attributes.protocolHeaders default {}]</http:headers>
       </http:response>
       <http:error-response>
@@ -24,6 +24,12 @@
         queryString: attributes.queryString
         }]</apikit-soap:attributes>
     </apikit-soap:router>
+    <ee:transform doc:name="Fault Detect">
+      <ee:variables>
+        <ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0output application/java---
+// Mule 4 SOAP services seem to mostly handle SOAP faults OK but they are not returning a 500 when they return a faultif (payload contains "<soap:Fault>") 500 else 200]]></ee:set-variable>
+      </ee:variables>
+    </ee:transform>
   </flow>
   <flow name="operation1:\soapkit-config">
     <ee:transform>
