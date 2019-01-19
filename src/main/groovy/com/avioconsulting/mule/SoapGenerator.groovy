@@ -15,7 +15,8 @@ class SoapGenerator implements FileUtil {
                          String service,
                          String port,
                          boolean insertApiNameInListenerPath,
-                         String insertXmlBeforeRouter = null) {
+                         String insertXmlBeforeRouter = null,
+                         String insertXmlAfterRouter = null) {
         def mainDir = join(baseDirectory,
                            'src',
                            'main')
@@ -68,6 +69,10 @@ class SoapGenerator implements FileUtil {
         if (insertXmlBeforeRouter) {
             fileXml = fileXml.replace('<apikit-soap:router',
                                       "${insertXmlBeforeRouter}\r\n    <apikit-soap:router")
+        }
+        if (insertXmlAfterRouter) {
+            fileXml = fileXml.replace('</apikit-soap:router>',
+                                      "</apikit-soap:router>\r\n    ${insertXmlAfterRouter}")
         }
         outputFile.text = fileXml
     }

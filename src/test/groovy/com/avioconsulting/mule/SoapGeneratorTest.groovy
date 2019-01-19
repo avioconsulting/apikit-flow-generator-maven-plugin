@@ -95,7 +95,7 @@ class SoapGeneratorTest implements FileUtil {
     }
 
     @Test
-    void newFile_explicit_svc_insert_xml() {
+    void newFile_explicit_svc_insert_xml_before() {
         // arrange
 
         // act
@@ -115,6 +115,30 @@ class SoapGeneratorTest implements FileUtil {
         assert actual.exists()
         assertThat Input.fromFile(actual),
                    matches('expectedInput_insertBeforeRouter.xml')
+    }
+
+    @Test
+    void newFile_explicit_svc_insert_xml_after() {
+        // arrange
+
+        // act
+        SoapGenerator.generate(tempDir,
+                               newWsdlPath,
+                               'foobar',
+                               'v1',
+                               'theConfig',
+                               'WeirdServiceName',
+                               'WeirdPortName',
+                               true,
+                               null,
+                               '<foobar/>',)
+
+        // assert
+        def actual = new File(appDir,
+                              'input_v1.xml')
+        assert actual.exists()
+        assertThat Input.fromFile(actual),
+                   matches('expectedInput_insertAfterRouter.xml')
     }
 
     @Test
