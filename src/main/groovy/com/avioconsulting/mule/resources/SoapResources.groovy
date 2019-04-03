@@ -34,7 +34,7 @@ class SoapResources {
             'output application/java\n' +
             '---\n' +
             '// Mule 4 SOAP services seem to mostly handle SOAP faults OK but they are not returning a 500 when they return a fault\n' +
-            'if (payload contains "<soap:Fault>") 500 else 200]]></ee:set-variable>\n' +
+            'if (payload.soap#Envelope.soap#Body.soap#Fault != null) 500 else 200]]></ee:set-variable>\n' +
             '           </ee:variables>\n' +
             '        </ee:transform>\n' +
             '    </flow>'
