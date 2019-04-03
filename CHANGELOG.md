@@ -1,6 +1,10 @@
 # 7.x
 (for Studo 7/Mule 4.x)
 
+## 7.3.2.1
+* Studio 7.3.2 libraries
+* Improve SOAP fault detection
+
 ## 7.3.1.1
 * Studio 7.3.1 libraries
 
