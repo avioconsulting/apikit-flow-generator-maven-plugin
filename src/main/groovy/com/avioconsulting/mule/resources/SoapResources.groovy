@@ -37,6 +37,10 @@ class SoapResources {
             'if (payload.soap#Envelope.soap#Body.soap#Fault != null) 500 else 200]]></ee:set-variable>\n' +
             '           </ee:variables>\n' +
             '        </ee:transform>\n' +
+            '        <set-payload value="#[payload]"\n' +
+            '                     doc:name="Set MIME type to text/xml"\n' +
+            '                     doc:description="Most SOAP clients do not like Mule default of application/xml"\n' +
+            '                     mimeType="text/xml; charset=UTF-8"/>\n'+
             '    </flow>'
 
     static final String APIKIT_CONFIG = '<apikit-soap:config name="soapkit-config" port="PORT_NAME" service="SERVICE_NAME" wsdlLocation="WSDL_LOCATION" inboundValidationEnabled="${validate.soap.requests}"/>'

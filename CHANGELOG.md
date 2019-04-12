@@ -1,6 +1,9 @@
 # 7.x
 (for Studo 7/Mule 4.x)
 
+## 7.3.2.2
+* Mule 4 returns `application/xml` for `Content-Type`, which technically violates the SOAP HTTP binding standard. Force `text/xml` in order to be compliant
+
 ## 7.3.2.1
 * Studio 7.3.2 libraries
 * Improve SOAP fault detection

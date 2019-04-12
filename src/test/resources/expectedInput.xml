@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-<apikit-soap:config name="soapkit-config" port="WeirdPortName" service="WeirdServiceName" wsdlLocation="input.wsdl" inboundValidationEnabled="${validate.soap.requests}"/>
-<flow name="api-main">
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <apikit-soap:config name="soapkit-config" port="WeirdPortName" service="WeirdServiceName" wsdlLocation="input.wsdl"
+                        inboundValidationEnabled="${validate.soap.requests}"/>
+    <flow name="api-main">
         <http:listener config-ref="theConfig" path="/foobar/v1/WeirdServiceName/WeirdPortName">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:body>#[payload]</http:body>
@@ -15,26 +21,31 @@
         <apikit-soap:router config-ref="soapkit-config">
             <apikit-soap:message>#[payload]</apikit-soap:message>
             <apikit-soap:attributes>#[
-              %dw 2.0
-              output application/java
-              ---
-              {
-                  headers: attributes.headers,
-                  method: attributes.method,
-                  queryString: attributes.queryString
-            }]</apikit-soap:attributes>
+                %dw 2.0
+                output application/java
+                ---
+                {
+                headers: attributes.headers,
+                method: attributes.method,
+                queryString: attributes.queryString
+                }]
+            </apikit-soap:attributes>
         </apikit-soap:router>
         <ee:transform doc:name="Fault Detect">
-           <ee:variables>
-              <ee:set-variable variableName="httpStatus" ><![CDATA[%dw 2.0
+            <ee:variables>
+                <ee:set-variable variableName="httpStatus"><![CDATA[%dw 2.0
 output application/java
 ---
 // Mule 4 SOAP services seem to mostly handle SOAP faults OK but they are not returning a 500 when they return a fault
 if (payload.soap#Envelope.soap#Body.soap#Fault != null) 500 else 200]]></ee:set-variable>
-           </ee:variables>
+            </ee:variables>
         </ee:transform>
+        <set-payload value="#[payload]"
+                     doc:name="Set MIME type to text/xml"
+                     doc:description="Most SOAP clients do not like Mule default of application/xml"
+                     mimeType="text/xml; charset=UTF-8"/>
     </flow>
-<flow name="operation1:\soapkit-config">
+    <flow name="operation1:\soapkit-config">
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -51,4 +62,5 @@ ns soap http://schemas.xmlsoap.org/soap/envelope
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-    </flow></mule>
+    </flow>
+</mule>
