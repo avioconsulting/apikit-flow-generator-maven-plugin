@@ -30,6 +30,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'designCenter.project.name', required = true)
     private String designCenterProjectName
 
+    @Parameter(property = 'main.raml')
+    private String mainRamlFileName
+
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
     private boolean useCloudHub
 
@@ -65,12 +68,17 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             new File(apiDirectory,
                      f.fileName).text = f.contents
         }
-        def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
-                                                              '*.raml')
-        def main = topLevelFiles[0]
-        log.info "Assuming ${main} is the top level RAML file"
+        if (!mainRamlFileName) {
+            def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
+                                                                  '*.raml')
+            mainRamlFileName = topLevelFiles[0]
+            log.info "Assuming ${mainRamlFileName} is the top level RAML file"
+        } else {
+            mainRamlFileName = join(apiDirectory,
+                                    mainRamlFileName).absolutePath
+        }
         RestGenerator.generate(mavenProject.basedir,
-                               main,
+                               mainRamlFileName,
                                apiName,
                                currentApiVersion,
                                useCloudHub,
