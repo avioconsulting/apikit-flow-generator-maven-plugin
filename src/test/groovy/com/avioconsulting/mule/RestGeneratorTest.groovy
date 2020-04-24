@@ -44,6 +44,10 @@ class RestGeneratorTest implements FileUtil {
                               'api-stuff-v1.raml'
         FileUtils.copyFileToDirectory(sourceFile,
                                       apiDir)
+        sourceFile = join testResources,
+                          'ref_type.raml'
+        FileUtils.copyFileToDirectory(sourceFile,
+                                      apiDir)
         // scaffolder won't run without this
         FileUtils.copyFileToDirectory(join(testResources,
                                            'mule-artifact.json'),
