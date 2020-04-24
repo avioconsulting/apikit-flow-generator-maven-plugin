@@ -15,7 +15,16 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
         this.clientWrapper = clientWrapper
     }
 
-    String getDesignCenterProjectId(String projectName) {
+    List<RamlFile> getExistingDesignCenterFilesByProjectName(String projectName) {
+        def projectId = getDesignCenterProjectId(projectName)
+        new DesignCenterLock(clientWrapper,
+                             logger,
+                             projectId).withCloseable {
+            return getExistingDesignCenterFiles(projectId)
+        }
+    }
+
+    private String getDesignCenterProjectId(String projectName) {
         logger.println "Looking up ID for Design Center project '${projectName}'"
         def request = new HttpGet("${clientWrapper.baseUrl}/designcenter/api-designer/projects")
         def failureContext = "fetch design center project ID for '${projectName}'"
@@ -51,7 +60,7 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                                    resultHandler)
     }
 
-    List<RamlFile> getExistingDesignCenterFiles(String projectId) {
+    private List<RamlFile> getExistingDesignCenterFiles(String projectId) {
         logger.println('Fetching existing Design Center RAML files')
         def url = getFilesUrl(projectId)
         def request = new HttpGet(url)
