@@ -183,6 +183,8 @@ dependencies {
             name: 'mule-apikit-module',
             version: '1.3.4',
             classifier: 'mule-plugin'
+    // filenamefinder
+    compile 'org.apache.ant:ant:1.9.2'
     // direct
     compile group: 'org.jdom',
             name: 'jdom2',
