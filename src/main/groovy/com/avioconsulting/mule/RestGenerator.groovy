@@ -8,7 +8,8 @@ import org.jdom2.Namespace
 import org.jdom2.input.SAXBuilder
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
-import org.mule.apikit.implv2.ParserWrapperV2
+import org.mule.apikit.model.api.ApiReference
+import org.mule.parser.service.strategy.RamlParsingStrategy
 import org.mule.tools.apikit.MainAppScaffolder
 import org.mule.tools.apikit.model.RuntimeEdition
 import org.mule.tools.apikit.model.ScaffolderContext
@@ -62,10 +63,10 @@ class RestGenerator implements FileUtil {
             }
         }
         // generates the flow
-        def spec = new ParserWrapperV2(ramlFile.absolutePath,
-                                       []).parse()
+        def parseResult = new RamlParsingStrategy().parse(ApiReference.create(ramlFile.absolutePath))
+        assert parseResult.errors == []
         def result = scaffolder.run(ScaffoldingConfiguration.builder()
-                                            .withApi(spec)
+                                            .withApi(parseResult.get())
                                             .withMuleConfigurations([])
                                             .build())
         assert result.errors == []
