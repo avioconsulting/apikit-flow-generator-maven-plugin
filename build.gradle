@@ -2,8 +2,8 @@ import groovy.xml.XmlUtil
 import org.apache.tools.ant.taskdefs.condition.Os
 
 group 'com.avioconsulting.mule'
-def studioVersion = '7.3.2'
-version "${studioVersion}.2"
+def studioVersion = '7.4.2'
+version "${studioVersion}.1`"
 
 configurations {
     provided
@@ -86,9 +86,12 @@ def getRestScaffolder = {
                                                   "org.mule.tooling.apikit.deps_${studioVersion}*.jar")
     assert !files.empty
     def jarFile = new File(files[0])
-    return zipTree(jarFile).find {
-        File file -> file.absolutePath.endsWith('apikit-scaffolder.jar')
+    println "Found JAR file ${jarFile} in Studio dir"
+    def result = zipTree(jarFile).find {
+        File file -> file.name.startsWith('mule-apikit-scaffolder')
     }
+    println "Identified scaffolder ${result}"
+    return result
 }
 
 clean {
@@ -189,15 +192,16 @@ dependencies {
     assert scaffolder.exists()
     println "REST Scaffolder is ${scaffolder}"
     bundled files(scaffolder.absolutePath)
-    compile 'org.mule.runtime:mule-api:1.1.3'
-    runtime "org.mule.raml:raml-parser-interface-impl-v2:1.1.9"
-    runtime 'org.mule.tools:mule-apikit-common:1.1.9'
-    runtime 'jaxen:jaxen:1.1.4'
-    // transitive dependencies
-    runtime 'org.raml:raml-parser:0.8.28'
-    runtime 'org.raml:raml-parser-2:1.0.27'
-    // indirect dependency
-    provided 'org.apache.maven:maven-plugin-api:3.3.9'
+    // indirect
+    compile 'org.mule.runtime:mule-api:1.1.5'
+    compile 'org.mule.apikit:parser-service:2.0.1'
+    compile 'jaxen:jaxen:1.1.4'
+    compile 'org.mule.weave:runtime:2.1.8'
+    compile 'org.mule.weave:core-modules:2.1.8'
+    compile group: 'org.mule.modules',
+            name: 'mule-apikit-module',
+            version: '1.3.4',
+            classifier: 'mule-plugin'
     // direct
     compile group: 'org.jdom',
             name: 'jdom2',

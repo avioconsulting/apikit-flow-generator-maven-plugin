@@ -8,8 +8,11 @@ import org.jdom2.Namespace
 import org.jdom2.input.SAXBuilder
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
-import org.mule.tools.apikit.ScaffolderAPI
+import org.mule.apikit.implv2.ParserWrapperV2
+import org.mule.tools.apikit.MainAppScaffolder
 import org.mule.tools.apikit.model.RuntimeEdition
+import org.mule.tools.apikit.model.ScaffolderContext
+import org.mule.tools.apikit.model.ScaffoldingConfiguration
 
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
@@ -32,7 +35,8 @@ class RestGenerator implements FileUtil {
                     boolean insertApiNameInListenerPath,
                     String mavenProjectName,
                     String httpListenerConfigName) {
-        def apiBuilder = new ScaffolderAPI()
+        // without runtime edition EE, we won't use weaves in the output
+        def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
         def mainDir = join(baseDirectory,
                            'src',
                            'main')
@@ -58,11 +62,18 @@ class RestGenerator implements FileUtil {
             }
         }
         // generates the flow
-        apiBuilder.run([ramlFile],
-                       appDirectory,
-                       null,
-                       '4.1.3',
-                       RuntimeEdition.EE) // without runtime edition, we won't use weaves in the output
+        def spec = new ParserWrapperV2(ramlFile.absolutePath,
+                                       []).parse()
+        def result = scaffolder.run(ScaffoldingConfiguration.builder()
+                                            .withApi(spec)
+                                            .withMuleConfigurations([])
+                                            .build())
+        assert result.errors == []
+        assert result.generatedConfigs.size() > 0
+        result.generatedConfigs.each { config ->
+            new File(appDirectory,
+                     config.name).text = config.content.text
+        }
         if (useCloudHub) {
             adjustRamlBaseUri(ramlFile,
                               apiName,
@@ -221,9 +232,9 @@ class RestGenerator implements FileUtil {
         def listeners = flowNode.getChildren('flow',
                                              core)
                 .collect { flow ->
-            flow.getChildren('listener',
-                             http)
-        }.flatten()
+                    flow.getChildren('listener',
+                                     http)
+                }.flatten()
         listeners.each { Element listener ->
             // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
             def configRefAttribute = listener.getAttribute('config-ref')
