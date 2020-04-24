@@ -16,8 +16,17 @@ class RestGenerateMojo extends AbstractMojo {
     @Parameter(property = 'api.current.version')
     private String currentApiVersion
 
-    @Parameter(property = 'raml.path', defaultValue = 'api-${api.name}-${api.current.version}.raml')
-    private String ramlPath
+    @Parameter(property = 'anypoint.username', required = true)
+    private String anypointUsername
+
+    @Parameter(property = 'anypoint.password', required = true)
+    private String anypointPassword
+
+    @Parameter(property = 'anypoint.organizationName')
+    private String anypointOrganizationName
+
+    @Parameter(property = 'designCenter.project.name', required = true)
+    private String designCenterProjectName
 
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
     private boolean useCloudHub
