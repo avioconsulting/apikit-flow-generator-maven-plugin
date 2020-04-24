@@ -157,9 +157,14 @@ class DesignCenterDeployerTest extends BaseTest {
         assertThat result,
                    is(equalTo([
                            new RamlFile('stuff.raml',
-                                        'the contents'),
+                                        'the contents',
+                                        'FILE'),
                            new RamlFile('examples/foo.raml',
-                                        'the contents')
+                                        'the contents',
+                                        'FILE'),
+                           new RamlFile('howdy',
+                                        null,
+                                        'FOLDER')
                    ]))
         assertThat urls,
                    is(equalTo([

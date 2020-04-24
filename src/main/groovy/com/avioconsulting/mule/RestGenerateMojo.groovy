@@ -64,7 +64,14 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                                 'resources',
                                 'api')
         apiDirectory.mkdirs()
-        existingRamlFiles.each { f ->
+        // need our directories first
+        def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
+        folders.each { folder ->
+            new File(apiDirectory,
+                     folder.fileName).mkdirs()
+        }
+        def noDirs = existingRamlFiles - folders
+        noDirs.each { f ->
             new File(apiDirectory,
                      f.fileName).text = f.contents
         }

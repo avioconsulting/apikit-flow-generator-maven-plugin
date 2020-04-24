@@ -64,15 +64,23 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                                    'Fetching project files') { List<Map> results ->
             def filesWeCareAbout = results.findAll { result ->
                 def asFile = new File(result.path)
-                result.type != 'FOLDER' && asFile.name != '.gitignore'
+                asFile.name != '.gitignore'
             }
             return filesWeCareAbout.collect { result ->
                 def filePath = result.path
                 def escapedForUrl = URLEncoder.encode(filePath)
-                executeDesignCenterRequest(new HttpGet("${url}/${escapedForUrl}"),
-                                           "Fetching file ${filePath}") { String contents ->
+                def resultType = result.type
+                if (resultType == 'FOLDER') {
                     new RamlFile(filePath,
-                                 contents)
+                                 null,
+                                 resultType)
+                } else {
+                    executeDesignCenterRequest(new HttpGet("${url}/${escapedForUrl}"),
+                                               "Fetching file ${filePath}") { String contents ->
+                        new RamlFile(filePath,
+                                     contents,
+                                     resultType)
+                    }
                 }
             }
         }

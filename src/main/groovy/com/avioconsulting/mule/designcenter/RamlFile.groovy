@@ -4,5 +4,5 @@ import groovy.transform.Immutable
 
 @Immutable
 class RamlFile {
-    String fileName, contents
+    String fileName, contents, type
 }
