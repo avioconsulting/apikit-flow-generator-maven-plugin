@@ -3,7 +3,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 group 'com.avioconsulting.mule'
 def studioVersion = '7.4.2'
-version "${studioVersion}.1`"
+version "${studioVersion}.1"
 
 configurations {
     provided
@@ -118,21 +118,7 @@ task pluginDescriptor(type: Exec) {
     commandLine mvn,
                 '-e',
                 '-B',
-                'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
-    def dependenciesMavenDescriptorPluginDoesNotLike = [
-            'mule-api',
-            'mule-apikit-common',
-            'raml-parser-interface-impl-v2',
-            'raml-parser',
-            'raml-parser-2'
-    ]
-    def getDependencyNode = { pomNode, dependencyName ->
-        pomNode.dependencies.dependency.find { d ->
-            def value = d.artifactId[0].value()[0]
-            value == dependencyName
-        }
-    }
-    def existingScope = null
+                'org.apache.maven.plugins:maven-plugin-plugin:3.6.0:descriptor'
     doFirst {
         def pom = project.file('pom.xml')
         install.repositories.mavenInstaller.pom.writeTo(pom)
@@ -148,19 +134,20 @@ task pluginDescriptor(type: Exec) {
                              '\${project.basedir}/build')
         buildNode.appendNode('outputDirectory',
                              '\${project.build.directory}/classes/main')
+        def pluginsNode = buildNode.appendNode('plugins')
+        def pluginNode = pluginsNode.appendNode('plugin')
+        pluginNode.appendNode('groupId', 'org.apache.maven.plugins')
+        pluginNode.appendNode('artifactId', 'maven-plugin-plugin')
+        pluginNode.appendNode('version', '3.6.0')
+        def config = pluginNode.appendNode('configuration')
+        def mojoDeps = config.appendNode('mojoDependencies')
+        mojoDeps.appendNode('param', 'com.avioconsulting.mule:apikit-flow-generator-maven-plugin')
         def repositories = pomNode.appendNode('repositories')
         def muleReleasesRepo = repositories.appendNode('repository')
         muleReleasesRepo.appendNode('id',
                                     'mulesoft-releases')
         muleReleasesRepo.appendNode('url',
                                     'http://repository.mulesoft.org/releases/')
-        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
-            getDependencyNode(pomNode,
-                              name)
-        }.each { dependency ->
-            existingScope = dependency.scope[0].value()[0]
-            dependency.scope[0].value = 'test'
-        }
         XmlUtil.serialize(pomNode,
                           new FileWriter(pom))
     }
@@ -168,12 +155,6 @@ task pluginDescriptor(type: Exec) {
     doLast {
         def pom = project.file('pom.xml')
         Node pomNode = new XmlParser().parse(pom)
-        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
-            getDependencyNode(pomNode,
-                              name)
-        }.each { dependency ->
-            dependency.scope[0].value = existingScope
-        }
         XmlUtil.serialize(pomNode,
                           new FileWriter(pom))
         final pluginDescriptor = new File((File) project.compileGroovy.destinationDir,
