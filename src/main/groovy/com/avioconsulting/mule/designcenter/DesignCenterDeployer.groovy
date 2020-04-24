@@ -17,11 +17,7 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
 
     List<RamlFile> getExistingDesignCenterFilesByProjectName(String projectName) {
         def projectId = getDesignCenterProjectId(projectName)
-        new DesignCenterLock(clientWrapper,
-                             logger,
-                             projectId).withCloseable {
-            return getExistingDesignCenterFiles(projectId)
-        }
+        return getExistingDesignCenterFiles(projectId)
     }
 
     private String getDesignCenterProjectId(String projectName) {
