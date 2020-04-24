@@ -71,11 +71,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         if (!mainRamlFileName) {
             def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
                                                                   '*.raml')
-            mainRamlFileName = topLevelFiles[0]
+            // we don't want the full path
+            mainRamlFileName = new File(topLevelFiles[0]).name
             log.info "Assuming ${mainRamlFileName} is the top level RAML file"
-        } else {
-            mainRamlFileName = join(apiDirectory,
-                                    mainRamlFileName).absolutePath
         }
         RestGenerator.generate(mavenProject.basedir,
                                mainRamlFileName,
