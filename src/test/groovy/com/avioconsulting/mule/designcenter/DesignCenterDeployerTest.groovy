@@ -127,6 +127,10 @@ class DesignCenterDeployerTest extends BaseTest {
                 if (request.absoluteURI().endsWith('files')) {
                     jsonResult = [
                             [
+                                    path: '.gitignore',
+                                    type: 'FILE'
+                            ],
+                            [
                                     path: 'stuff.raml',
                                     type: 'FILE'
                             ],
