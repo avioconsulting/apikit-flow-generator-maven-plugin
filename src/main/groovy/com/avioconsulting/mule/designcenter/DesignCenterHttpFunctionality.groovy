@@ -21,8 +21,5 @@ trait DesignCenterHttpFunctionality {
                                                                     resultHandler)
     }
 
-    def getMasterUrl(HttpClientWrapper clientWrapper,
-                     String projectId) {
-        "${clientWrapper.baseUrl}/designcenter/api-designer/projects/${projectId}/branches/master"
-    }
+
 }

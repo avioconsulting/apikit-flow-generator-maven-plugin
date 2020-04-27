@@ -30,6 +30,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'designCenter.project.name', required = true)
     private String designCenterProjectName
 
+    @Parameter(property = 'designCenter.branch.name', defaultValue = 'master')
+    private String designCenterBranchName
+
     @Parameter(property = 'main.raml')
     private String mainRamlFileName
 
@@ -56,7 +59,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                                                   this.anypointOrganizationName)
         def designCenter = new DesignCenterDeployer(clientWrapper,
                                                     log)
-        def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(designCenterProjectName)
+        def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(designCenterProjectName,
+                                                                                       designCenterBranchName)
         log.info 'Fetched RAML files OK, now writing to disk'
         def apiDirectory = join(mavenProject.basedir,
                                 'src',
@@ -72,6 +76,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         }
         def noDirs = existingRamlFiles - folders
         noDirs.each { f ->
+            log.info "Writing file ${f.fileName}..."
             new File(apiDirectory,
                      f.fileName).text = f.contents
         }

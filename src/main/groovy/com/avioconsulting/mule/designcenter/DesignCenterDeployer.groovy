@@ -15,9 +15,11 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
         this.clientWrapper = clientWrapper
     }
 
-    List<RamlFile> getExistingDesignCenterFilesByProjectName(String projectName) {
+    List<RamlFile> getExistingDesignCenterFilesByProjectName(String projectName,
+                                                             String branchName) {
         def projectId = getDesignCenterProjectId(projectName)
-        return getExistingDesignCenterFiles(projectId)
+        return getExistingDesignCenterFiles(projectId,
+                                            branchName)
     }
 
     private String getDesignCenterProjectId(String projectName) {
@@ -38,13 +40,15 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
         }
     }
 
-    def getMasterUrl(String projectId) {
-        getMasterUrl(clientWrapper,
-                     projectId)
+    def getBranchUrl(HttpClientWrapper clientWrapper,
+                     String projectId,
+                     String branchName) {
+        "${clientWrapper.baseUrl}/designcenter/api-designer/projects/${projectId}/branches/${branchName}"
     }
 
-    private def getFilesUrl(String projectId) {
-        "${getMasterUrl(projectId)}/files"
+    private def getFilesUrl(String projectId,
+                            String branchName) {
+        "${getBranchUrl(clientWrapper, projectId, branchName)}/files"
     }
 
     def executeDesignCenterRequest(HttpUriRequest request,
@@ -56,9 +60,11 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                                    resultHandler)
     }
 
-    private List<RamlFile> getExistingDesignCenterFiles(String projectId) {
+    private List<RamlFile> getExistingDesignCenterFiles(String projectId,
+                                                        String branchName) {
         logger.println('Fetching existing Design Center RAML files')
-        def url = getFilesUrl(projectId)
+        def url = getFilesUrl(projectId,
+                              branchName)
         def request = new HttpGet(url)
         executeDesignCenterRequest(request,
                                    'Fetching project files') { List<Map> results ->

@@ -1,9 +1,7 @@
 package com.avioconsulting.mule.designcenter
 
-
 import groovy.json.JsonOutput
 import groovy.test.GroovyAssert
-import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerRequest
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
@@ -151,7 +149,8 @@ class DesignCenterDeployerTest extends BaseTest {
         }
 
         // act
-        def result = deployer.getExistingDesignCenterFiles('ourprojectId')
+        def result = deployer.getExistingDesignCenterFiles('ourprojectId',
+                                                           'master')
 
         // assert
         assertThat result,
@@ -179,102 +178,77 @@ class DesignCenterDeployerTest extends BaseTest {
                                  is(equalTo('the_id'))
     }
 
-    static def mockDesignCenterProjectId(HttpServerRequest request,
-                                         String projectName,
-                                         String projectId) {
-        def mocked = false
-        if (request.uri() == '/designcenter/api-designer/projects') {
-            mocked = true
+    @Test
+    void getExistingDesignCenterFiles_otherbranch() {
+        // arrange
+        String anypointOrgId = null
+        List<String> urls = []
+        String ownerGuid = null
+        withHttpServer { HttpServerRequest request ->
+            if (mockAuthenticationOk(request)) {
+                return
+            }
+            anypointOrgId = request.getHeader('X-ORGANIZATION-ID')
+            urls << request.uri()
+            ownerGuid = request.getHeader('X-OWNER-ID')
             request.response().with {
                 statusCode = 200
                 putHeader('Content-Type',
                           'application/json')
-                end(JsonOutput.toJson([
-                        [
-                                id  : projectId,
-                                name: projectName
-                        ]
-                ]))
-            }
-        }
-        mocked
-    }
-
-    static def mockAcquireLock(HttpServerRequest request,
-                               String projectId) {
-        def mocked = false
-        if (request.uri() == "/designcenter/api-designer/projects/${projectId}/branches/master/acquireLock"
-                && request.method() == HttpMethod.POST) {
-            mocked = true
-            request.response().with {
-                statusCode = 200
-                end()
-            }
-        }
-        mocked
-    }
-
-    static def mockReleaseLock(HttpServerRequest request,
-                               String projectId) {
-        def mocked = false
-        if (request.uri() == "/designcenter/api-designer/projects/${projectId}/branches/master/releaseLock"
-                && request.method() == HttpMethod.POST) {
-            mocked = true
-            request.response().with {
-                statusCode = 200
-                end()
-            }
-        }
-        mocked
-    }
-
-    static def mockGetExistingFiles(HttpServerRequest request,
-                                    String projectId,
-                                    Map<String, String> filesAndContents) {
-        def mocked = false
-        def filenames = filesAndContents.keySet()
-        if (request.uri() == "/designcenter/api-designer/projects/${projectId}/branches/master/files") {
-            mocked = true
-            def responsePayload = filenames.collect { fileName ->
-                [
-                        path: fileName,
-                        type: 'FILE'
-                ]
-            }
-            request.response().with {
-                statusCode = 200
-                putHeader('Content-Type',
-                          'application/json')
-                end(JsonOutput.toJson(responsePayload))
-            }
-        }
-        filenames.each { fileName ->
-            if (request.uri() == "/designcenter/api-designer/projects/${projectId}/branches/master/files/${fileName}" &&
-                    request.method() == HttpMethod.GET) {
-                mocked = true
-                request.response().with {
-                    statusCode = 200
-                    putHeader('Content-Type',
-                              'application/json')
-                    end(JsonOutput.toJson(filesAndContents[fileName]))
+                def jsonResult
+                if (request.absoluteURI().endsWith('files')) {
+                    jsonResult = [
+                            [
+                                    path: '.gitignore',
+                                    type: 'FILE'
+                            ],
+                            [
+                                    path: 'stuff.raml',
+                                    type: 'FILE'
+                            ],
+                            [
+                                    path: 'examples/foo.raml',
+                                    type: 'FILE'
+                            ],
+                            [
+                                    path: 'howdy',
+                                    type: 'FOLDER'
+                            ]
+                    ]
+                } else {
+                    jsonResult = 'the contents'
                 }
+                end(JsonOutput.toJson(jsonResult))
             }
         }
-        mocked
-    }
 
-    static def mockDeleteFile(HttpServerRequest request,
-                              String projectId,
-                              String fileName) {
-        def mocked = false
-        if (request.uri() == "/designcenter/api-designer/projects/${projectId}/branches/master/files/${fileName}"
-                && request.method() == HttpMethod.DELETE) {
-            mocked = true
-            request.response().with {
-                statusCode = 204
-                end()
-            }
-        }
-        mocked
+        // act
+        def result = deployer.getExistingDesignCenterFiles('ourprojectId',
+                                                           'otherbranch')
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           new RamlFile('stuff.raml',
+                                        'the contents',
+                                        'FILE'),
+                           new RamlFile('examples/foo.raml',
+                                        'the contents',
+                                        'FILE'),
+                           new RamlFile('howdy',
+                                        null,
+                                        'FOLDER')
+                   ]))
+        assertThat urls,
+                   is(equalTo([
+                           '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/files',
+                           '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/files/stuff.raml',
+                           '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/files/examples%2Ffoo.raml'
+                   ]))
+        MatcherAssert.assertThat anypointOrgId,
+                                 is(equalTo('the-org-id'))
+        MatcherAssert.assertThat 'Design center needs this',
+                                 ownerGuid,
+                                 is(equalTo('the_id'))
     }
 }
