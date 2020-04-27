@@ -8,6 +8,9 @@ securitySchemes:
 uses:
   rt: ref_type.raml
 
+traits:
+  logging: !include sometrait.raml
+
 /endpoint:
   description: Submits stuff
   post:
