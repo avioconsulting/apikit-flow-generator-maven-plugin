@@ -40,14 +40,16 @@ class RestGeneratorTest implements FileUtil {
         def testResources = join new File('src'),
                                  'test',
                                  'resources'
-        def sourceFile = join testResources,
-                              'api-stuff-v1.raml'
-        FileUtils.copyFileToDirectory(sourceFile,
-                                      apiDir)
-        sourceFile = join testResources,
-                          'ref_type.raml'
-        FileUtils.copyFileToDirectory(sourceFile,
-                                      apiDir)
+        [
+                'api-stuff-v1.raml',
+                'ref_type.raml',
+                'sometrait.raml'
+        ].each { filename ->
+            def sourceFile = join testResources,
+                                  filename
+            FileUtils.copyFileToDirectory(sourceFile,
+                                          apiDir)
+        }
         // scaffolder won't run without this
         FileUtils.copyFileToDirectory(join(testResources,
                                            'mule-artifact.json'),
