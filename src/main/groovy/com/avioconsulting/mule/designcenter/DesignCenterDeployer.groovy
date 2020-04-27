@@ -68,6 +68,7 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
         def request = new HttpGet(url)
         executeDesignCenterRequest(request,
                                    'Fetching project files') { List<Map> results ->
+            logger.info "Retrieved the following file listing: ${results}"
             def filesWeCareAbout = results.findAll { result ->
                 def asFile = new File(result.path)
                 asFile.name != '.gitignore'
