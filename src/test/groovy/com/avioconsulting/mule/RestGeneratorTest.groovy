@@ -50,10 +50,11 @@ class RestGeneratorTest implements FileUtil {
                                           apiDir)
         }
         def sourceFile = join testResources,
-                              'somedir/sometrait.raml'
+                              'somedir/1.0.0/sometrait.raml'
         FileUtils.copyFileToDirectory(sourceFile,
                                       join(apiDir,
-                                           'somedir'))
+                                           'somedir',
+                                           '1.0.0'))
         // scaffolder won't run without this
         FileUtils.copyFileToDirectory(join(testResources,
                                            'mule-artifact.json'),
