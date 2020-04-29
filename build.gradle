@@ -3,7 +3,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 group 'com.avioconsulting.mule'
 def studioVersion = '7.4.2'
-version "${studioVersion}.2"
+version "${studioVersion}.3"
 
 configurations {
     provided

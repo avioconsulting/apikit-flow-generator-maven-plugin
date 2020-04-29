@@ -110,6 +110,7 @@ class DesignCenterDeployerTest extends BaseTest {
         String anypointOrgId = null
         List<String> urls = []
         String ownerGuid = null
+        def jobPosted = false
         withHttpServer { HttpServerRequest request ->
             if (mockAuthenticationOk(request)) {
                 return
@@ -118,11 +119,16 @@ class DesignCenterDeployerTest extends BaseTest {
             urls << request.uri()
             ownerGuid = request.getHeader('X-OWNER-ID')
             request.response().with {
-                statusCode = 200
                 putHeader('Content-Type',
                           'application/json')
                 def jsonResult
-                if (request.absoluteURI().endsWith('files')) {
+                if (request.absoluteURI().endsWith('job')) {
+                    jobPosted = true
+                    statusCode = 201
+                    end()
+                    return
+                }
+                if (jobPosted && request.absoluteURI().endsWith('files')) {
                     jsonResult = [
                             [
                                     path: '.gitignore',
@@ -141,10 +147,16 @@ class DesignCenterDeployerTest extends BaseTest {
                                     type: 'FOLDER'
                             ]
                     ]
-                } else {
+                    statusCode = 200
+                    end(JsonOutput.toJson(jsonResult))
+                } else if (request.absoluteURI().endsWith('.raml')) {
+                    statusCode = 200
                     jsonResult = 'the contents'
+                    end(JsonOutput.toJson(jsonResult))
+                } else {
+                    statusCode = 404
+                    end('unknown')
                 }
-                end(JsonOutput.toJson(jsonResult))
             }
         }
 
@@ -167,6 +179,7 @@ class DesignCenterDeployerTest extends BaseTest {
                    ]))
         assertThat urls,
                    is(equalTo([
+                           '/designcenter/api-designer/projects/ourprojectId/branches/master/exchange/dependencies/job',
                            '/designcenter/api-designer/projects/ourprojectId/branches/master/files',
                            '/designcenter/api-designer/projects/ourprojectId/branches/master/files/stuff.raml',
                            '/designcenter/api-designer/projects/ourprojectId/branches/master/files/examples%2Ffoo.raml'
@@ -192,6 +205,11 @@ class DesignCenterDeployerTest extends BaseTest {
             urls << request.uri()
             ownerGuid = request.getHeader('X-OWNER-ID')
             request.response().with {
+                if (request.absoluteURI().endsWith('job')) {
+                    statusCode = 201
+                    end()
+                    return
+                }
                 statusCode = 200
                 putHeader('Content-Type',
                           'application/json')
@@ -241,6 +259,7 @@ class DesignCenterDeployerTest extends BaseTest {
                    ]))
         assertThat urls,
                    is(equalTo([
+                           '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/exchange/dependencies/job',
                            '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/files',
                            '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/files/stuff.raml',
                            '/designcenter/api-designer/projects/ourprojectId/branches/otherbranch/files/examples%2Ffoo.raml'

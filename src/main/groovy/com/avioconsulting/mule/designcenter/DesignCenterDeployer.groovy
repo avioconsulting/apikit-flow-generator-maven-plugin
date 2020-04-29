@@ -2,6 +2,7 @@ package com.avioconsulting.mule.designcenter
 
 
 import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.methods.HttpPost
 import org.apache.http.client.methods.HttpUriRequest
 import org.apache.maven.plugin.logging.Log
 
@@ -60,11 +61,25 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                                    resultHandler)
     }
 
+    def triggerExchangeJobPost(String projectId,
+                               String branchName) {
+        logger.println('Trigger Exchange dependency resolution')
+        def url = getBranchUrl(clientWrapper,
+                               projectId,
+                               branchName) + '/exchange/dependencies/job'
+        def request = new HttpPost(url)
+        executeDesignCenterRequest(request,
+                                   'Exchange dependencies/job post')
+    }
+
     private List<RamlFile> getExistingDesignCenterFiles(String projectId,
                                                         String branchName) {
         logger.println('Fetching existing Design Center RAML files')
         def url = getFilesUrl(projectId,
                               branchName)
+        // Exchange dependencies sometimes do not show up unless you do this first
+        triggerExchangeJobPost(projectId,
+                               branchName)
         def request = new HttpGet(url)
         executeDesignCenterRequest(request,
                                    'Fetching project files') { List<Map> results ->
