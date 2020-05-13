@@ -1,8 +1,6 @@
 package com.avioconsulting.mule.designcenter
 
-
 import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.methods.HttpPost
 import org.apache.http.client.methods.HttpUriRequest
 import org.apache.maven.plugin.logging.Log
 
@@ -41,17 +39,6 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
         }
     }
 
-    def getBranchUrl(HttpClientWrapper clientWrapper,
-                     String projectId,
-                     String branchName) {
-        "${clientWrapper.baseUrl}/designcenter/api-designer/projects/${projectId}/branches/${branchName}"
-    }
-
-    private def getFilesUrl(String projectId,
-                            String branchName) {
-        "${getBranchUrl(clientWrapper, projectId, branchName)}/files"
-    }
-
     def executeDesignCenterRequest(HttpUriRequest request,
                                    String failureContext,
                                    Closure resultHandler = null) {
@@ -61,50 +48,15 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                                    resultHandler)
     }
 
-    def triggerExchangeJobPost(String projectId,
-                               String branchName) {
-        logger.println('Trigger Exchange dependency resolution')
-        def url = getBranchUrl(clientWrapper,
-                               projectId,
-                               branchName) + '/exchange/dependencies/job'
-        def request = new HttpPost(url)
-        executeDesignCenterRequest(request,
-                                   'Exchange dependencies/job post')
-    }
-
     private List<RamlFile> getExistingDesignCenterFiles(String projectId,
                                                         String branchName) {
         logger.println('Fetching existing Design Center RAML files')
-        def url = getFilesUrl(projectId,
-                              branchName)
-        // Exchange dependencies sometimes do not show up unless you do this first
-        triggerExchangeJobPost(projectId,
-                               branchName)
+        def url = "${clientWrapper.baseUrl}/exchange/api/v1/organizations/${clientWrapper.anypointOrganizationId}/projects/${projectId}/refs/${branchName}/archive"
         def request = new HttpGet(url)
-        executeDesignCenterRequest(request,
-                                   'Fetching project files') { List<Map> results ->
-            logger.info "Retrieved the following file listing: ${results}"
-            def filesWeCareAbout = results.findAll { result ->
-                def asFile = new File(result.path)
-                asFile.name != '.gitignore'
-            }
-            return filesWeCareAbout.collect { result ->
-                def filePath = result.path
-                def escapedForUrl = URLEncoder.encode(filePath)
-                def resultType = result.type
-                if (resultType == 'FOLDER') {
-                    new RamlFile(filePath,
-                                 null,
-                                 resultType)
-                } else {
-                    executeDesignCenterRequest(new HttpGet("${url}/${escapedForUrl}"),
-                                               "Fetching file ${filePath}") { String contents ->
-                        new RamlFile(filePath,
-                                     contents,
-                                     resultType)
-                    }
-                }
-            }
+        clientWrapper.execute(request).withCloseable { response ->
+            HttpClientWrapper.assertSuccessfulResponse(response,
+                                                       'fetching files')
+            return response.entity.content
         }
     }
 }
