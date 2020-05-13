@@ -120,7 +120,8 @@ class DesignCenterDeployerTest extends BaseTest {
                 if (request.absoluteURI().endsWith('archive')) {
                     def ant = new AntBuilder()
                     ant.zip(destfile: 'build/tmp/file.zip',
-                            basedir: 'src/test/resources/samplezipdir')
+                            basedir: 'src/test/resources/samplezipdir',
+                            defaultexcludes: 'no')
                     statusCode = 200
                     end(Buffer.buffer(new File('build/tmp/file.zip').bytes))
                 } else {

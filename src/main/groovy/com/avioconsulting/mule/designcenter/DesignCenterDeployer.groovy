@@ -64,12 +64,16 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                 ZipEntry ze
                 def buffer = new byte[2048]
                 while ((ze = zip.nextEntry) != null) {
+                    def zipEntryName = ze.name
                     if (ze.directory) {
-                        def withoutTrailingSlash = ze.name[0..-2]
+                        def withoutTrailingSlash = zipEntryName[0..-2]
                         results << new RamlFile(withoutTrailingSlash,
                                                 null,
                                                 'FOLDER')
                     } else {
+                        if (new File(zipEntryName).name == '.gitignore') {
+                            continue
+                        }
                         def len = 0
                         def bos = new ByteArrayOutputStream()
                         while ((len = zip.read(buffer)) > 0) {
@@ -77,7 +81,7 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
                                       0,
                                       len)
                         }
-                        results << new RamlFile(ze.name,
+                        results << new RamlFile(zipEntryName,
                                                 new String(bos.toByteArray()),
                                                 'FILE')
                     }
