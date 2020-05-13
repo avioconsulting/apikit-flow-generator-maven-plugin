@@ -2,6 +2,7 @@ package com.avioconsulting.mule.designcenter
 
 import groovy.json.JsonOutput
 import groovy.test.GroovyAssert
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerRequest
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
@@ -110,49 +111,26 @@ class DesignCenterDeployerTest extends BaseTest {
         String anypointOrgId = null
         List<String> urls = []
         String ownerGuid = null
-        def jobPosted = false
         withHttpServer { HttpServerRequest request ->
             if (mockAuthenticationOk(request)) {
                 return
             }
-            anypointOrgId = request.getHeader('X-ORGANIZATION-ID')
+            if (!anypointOrgId) {
+                anypointOrgId = request.getHeader('X-ORGANIZATION-ID')
+            }
             urls << request.uri()
-            ownerGuid = request.getHeader('X-OWNER-ID')
+            if (!ownerGuid) {
+                ownerGuid = request.getHeader('X-OWNER-ID')
+            }
             request.response().with {
                 putHeader('Content-Type',
                           'application/json')
-                def jsonResult
-                if (request.absoluteURI().endsWith('job')) {
-                    jobPosted = true
-                    statusCode = 201
-                    end()
-                    return
-                }
-                if (jobPosted && request.absoluteURI().endsWith('files')) {
-                    jsonResult = [
-                            [
-                                    path: '.gitignore',
-                                    type: 'FILE'
-                            ],
-                            [
-                                    path: 'stuff.raml',
-                                    type: 'FILE'
-                            ],
-                            [
-                                    path: 'examples/foo.raml',
-                                    type: 'FILE'
-                            ],
-                            [
-                                    path: 'howdy',
-                                    type: 'FOLDER'
-                            ]
-                    ]
+                if (request.absoluteURI().endsWith('archive')) {
+                    def ant = new AntBuilder()
+                    ant.zip(destfile: 'build/tmp/file.zip',
+                            basedir: 'src/test/resources/samplezipdir')
                     statusCode = 200
-                    end(JsonOutput.toJson(jsonResult))
-                } else if (request.absoluteURI().endsWith('.raml')) {
-                    statusCode = 200
-                    jsonResult = 'the contents'
-                    end(JsonOutput.toJson(jsonResult))
+                    end(Buffer.buffer(new File('build/tmp/file.zip').bytes))
                 } else {
                     statusCode = 404
                     end('unknown')
@@ -179,10 +157,7 @@ class DesignCenterDeployerTest extends BaseTest {
                    ]))
         assertThat urls,
                    is(equalTo([
-                           '/designcenter/api-designer/projects/ourprojectId/branches/master/exchange/dependencies/job',
-                           '/designcenter/api-designer/projects/ourprojectId/branches/master/files',
-                           '/designcenter/api-designer/projects/ourprojectId/branches/master/files/stuff.raml',
-                           '/designcenter/api-designer/projects/ourprojectId/branches/master/files/examples%2Ffoo.raml'
+                           '/designcenter/api-designer/projects/ourprojectId/branches/master/files'
                    ]))
         MatcherAssert.assertThat anypointOrgId,
                                  is(equalTo('the-org-id'))
