@@ -4,6 +4,9 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpUriRequest
 import org.apache.maven.plugin.logging.Log
 
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+
 class DesignCenterDeployer implements DesignCenterHttpFunctionality {
     private final HttpClientWrapper clientWrapper
     private final Log logger
@@ -56,7 +59,31 @@ class DesignCenterDeployer implements DesignCenterHttpFunctionality {
         clientWrapper.execute(request).withCloseable { response ->
             HttpClientWrapper.assertSuccessfulResponse(response,
                                                        'fetching files')
-            return response.entity.content
+            new ZipInputStream(response.entity.content).withCloseable { zip ->
+                List<RamlFile> results = []
+                ZipEntry ze
+                def buffer = new byte[2048]
+                while ((ze = zip.nextEntry) != null) {
+                    if (ze.directory) {
+                        def withoutTrailingSlash = ze.name[0..-2]
+                        results << new RamlFile(withoutTrailingSlash,
+                                                null,
+                                                'FOLDER')
+                    } else {
+                        def len = 0
+                        def bos = new ByteArrayOutputStream()
+                        while ((len = zip.read(buffer)) > 0) {
+                            bos.write(buffer,
+                                      0,
+                                      len)
+                        }
+                        results << new RamlFile(ze.name,
+                                                new String(bos.toByteArray()),
+                                                'FILE')
+                    }
+                }
+                return results
+            }
         }
     }
 }
