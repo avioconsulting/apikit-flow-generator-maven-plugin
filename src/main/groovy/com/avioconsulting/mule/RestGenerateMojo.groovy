@@ -2,6 +2,7 @@ package com.avioconsulting.mule
 
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
+import org.apache.commons.io.FileUtils
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -36,6 +37,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'main.raml')
     private String mainRamlFileName
 
+    @Parameter(property = 'local.raml.directory')
+    private File localRamlDirectory
+
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
     private boolean useCloudHub
 
@@ -51,34 +55,41 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
-        log.info 'Will fetch RAML contents from Design Center first'
-        def clientWrapper = new HttpClientWrapper('https://anypoint.mulesoft.com',
-                                                  this.anypointUsername,
-                                                  this.anypointPassword,
-                                                  this.log,
-                                                  this.anypointOrganizationName)
-        def designCenter = new DesignCenterDeployer(clientWrapper,
-                                                    log)
-        def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(designCenterProjectName,
-                                                                                       designCenterBranchName)
-        log.info 'Fetched RAML files OK, now writing to disk'
         def apiDirectory = join(mavenProject.basedir,
                                 'src',
                                 'main',
                                 'resources',
                                 'api')
         apiDirectory.mkdirs()
-        // need our directories first
-        def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
-        folders.each { folder ->
-            new File(apiDirectory,
-                     folder.fileName).mkdirs()
-        }
-        def noDirs = existingRamlFiles - folders
-        noDirs.each { f ->
-            log.info "Writing file ${f.fileName}..."
-            new File(apiDirectory,
-                     f.fileName).text = f.contents
+        if (localRamlDirectory) {
+            log.info "Copying RAMLs from ${localRamlDirectory}"
+            assert localRamlDirectory.exists()
+            FileUtils.copyDirectory(localRamlDirectory,
+                                    apiDirectory)
+        } else {
+            log.info 'Will fetch RAML contents from Design Center first'
+            def clientWrapper = new HttpClientWrapper('https://anypoint.mulesoft.com',
+                                                      this.anypointUsername,
+                                                      this.anypointPassword,
+                                                      this.log,
+                                                      this.anypointOrganizationName)
+            def designCenter = new DesignCenterDeployer(clientWrapper,
+                                                        log)
+            def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(designCenterProjectName,
+                                                                                           designCenterBranchName)
+            log.info 'Fetched RAML files OK, now writing to disk'
+            // need our directories first
+            def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
+            folders.each { folder ->
+                new File(apiDirectory,
+                         folder.fileName).mkdirs()
+            }
+            def noDirs = existingRamlFiles - folders
+            noDirs.each { f ->
+                log.info "Writing file ${f.fileName}..."
+                new File(apiDirectory,
+                         f.fileName).text = f.contents
+            }
         }
         if (!mainRamlFileName) {
             def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
