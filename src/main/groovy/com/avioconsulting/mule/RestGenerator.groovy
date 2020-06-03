@@ -119,15 +119,15 @@ class RestGenerator implements FileUtil {
                             insertApiNameInListenerPath,
                             httpListenerConfigName)
         parameterizeApiKitConfig(rootElement)
-        addChoiceRouting(rootElement,
-                         apiBaseName)
+        removeConsole(rootElement,
+                      apiBaseName)
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document,
                          new FileWriter(flowPath))
     }
 
-    private static void addChoiceRouting(Element rootElement,
-                                         String apiBaseName) {
+    private static void removeConsole(Element rootElement,
+                                      String apiBaseName) {
         allowDetailedValidationInfo(rootElement,
                                     apiBaseName)
         def lookFor = "${apiBaseName}-console"
@@ -136,27 +136,7 @@ class RestGenerator implements FileUtil {
             element.getAttribute('name').value == lookFor
         }
         assert consoleFlow: "Was looking for flow ${lookFor}"
-        def consoleElement = consoleFlow.getChild('console',
-                                                  apiKit)
-        consoleFlow.removeContent(consoleElement)
-        def errorHandler = consoleFlow.getChild('error-handler',
-                                                core)
-        assert errorHandler: 'Expected to find error handler here'
-        consoleFlow.removeContent(errorHandler)
-        setupChoice(consoleFlow,
-                    '${enable.apikit.console}') { Element when,
-                                                  Element otherwise ->
-            when.addContent(consoleElement)
-            def payload = new Element('set-payload',
-                                      core)
-            otherwise.addContent(payload)
-            payload.setAttribute('value',
-                                 'Resource not found')
-            payload.setAttribute('name',
-                                 'Error message to caller',
-                                 doc)
-        }
-        consoleFlow.addContent(errorHandler)
+        rootElement.removeContent(consoleFlow)
     }
 
     private static void allowDetailedValidationInfo(Element rootElement,
@@ -191,24 +171,6 @@ class RestGenerator implements FileUtil {
                 "if (p('return.validation.failures')) {error_details: error.description} else {message: \"Bad request\"}"
         ]
         setPayload.setContent(new CDATA(dwLines.join('\n')))
-    }
-
-    static def setupChoice(Element root,
-                           String expression,
-                           Closure closure) {
-        def choiceElement = new Element('choice',
-                                        core)
-        root.addContent(choiceElement)
-        def whenElement = new Element('when',
-                                      core)
-        choiceElement.addContent(whenElement)
-        whenElement.setAttribute('expression',
-                                 expression)
-        def otherwise = new Element('otherwise',
-                                    core)
-        choiceElement.addContent(otherwise)
-        closure(whenElement,
-                otherwise)
     }
 
     private static boolean removeHttpListenerConfigs(Element rootElement) {

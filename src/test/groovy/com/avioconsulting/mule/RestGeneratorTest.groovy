@@ -107,7 +107,7 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         def listeners = xmlNode.flow[http.listener].'@path'
         assertThat listeners,
-                   is(equalTo(['/api/v1/*', '/console/v1/*']))
+                   is(equalTo(['/api/v1/*']))
     }
 
     @Test
@@ -227,8 +227,7 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         def listeners = xmlNode.flow[http.listener].'@config-ref'
         assertThat listeners,
-                   is(equalTo(['some-http-config',
-                               'some-http-config']))
+                   is(equalTo(['some-http-config']))
     }
 
     @Test
@@ -249,7 +248,7 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         def listeners = xmlNode.flow[http.listener].'@path'
         assertThat listeners,
-                   is(equalTo(['/stuff/api/v1/*', '/stuff/console/v1/*']))
+                   is(equalTo(['/stuff/api/v1/*']))
     }
 
     @Test
@@ -329,30 +328,6 @@ class RestGeneratorTest implements FileUtil {
         def flowNode = xmlNode.flow.find { Node node ->
             node.'@name' == 'api-stuff-v1-console'
         }
-        assert flowNode
-        assertThat getChildNodeNames(flowNode),
-                   is(equalTo([
-                           'listener',
-                           'choice',
-                           'error-handler'
-                   ]))
-        def choice = flowNode.choice[0]
-        assert choice
-        def choiceWhen = choice.when[0] as Node
-        assert choiceWhen
-        assertThat choiceWhen.'@expression',
-                   is(equalTo('${enable.apikit.console}'))
-        assertThat getChildNodeNames(choiceWhen),
-                   is(equalTo([
-                           'console'
-                   ]))
-        def otherwise = choice.otherwise[0] as Node
-        assert otherwise
-        def payload = otherwise['set-payload'][0] as Node
-        assert payload
-        assertThat payload['@value'],
-                   is(containsString('Resource not found'))
-        assertThat payload.attribute(doc.name),
-                   is(equalTo('Error message to caller'))
+        assert !flowNode
     }
 }
