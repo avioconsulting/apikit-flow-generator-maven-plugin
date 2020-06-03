@@ -47,7 +47,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             defaultValue = 'true')
     private boolean insertApiNameInListenerPath
 
-    @Parameter(property = 'http.listener.config.name', required = true)
+    @Parameter(property = 'http.listener.config.name')
     private String httpListenerConfigName
 
     @Component
@@ -97,6 +97,10 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             // we don't want the full path
             mainRamlFileName = new File(topLevelFiles[0]).name
             log.info "Assuming ${mainRamlFileName} is the top level RAML file"
+        }
+        if (!httpListenerConfigName) {
+            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
+            httpListenerConfigName = '${http.listener.config}'
         }
         RestGenerator.generate(mavenProject.basedir,
                                mainRamlFileName,
