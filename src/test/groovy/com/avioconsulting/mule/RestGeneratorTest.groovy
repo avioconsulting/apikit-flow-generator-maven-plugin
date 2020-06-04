@@ -125,11 +125,29 @@ class RestGeneratorTest implements FileUtil {
     @Test
     void httpErrorResponse() {
         // arrange
-
+        def httpErrorResponse = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<response xmlns="http://www.mulesoft.org/schema/mule/http" statusCode="400"/>
+"""
         // act
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               true,
+                               'theProject',
+                               '${http.listener.config}',
+                               null,
+                               null,
+                               null,
+                               httpErrorResponse)
 
         // assert
-        Assert.fail("write it")
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def listener = xmlNode.flow[http.listener][0] as Node
+        def response = listener[http.'error-response'][0] as Node
+        assertThat response.'@statusCode',
+                   is(equalTo('400'))
     }
 
     @Test
