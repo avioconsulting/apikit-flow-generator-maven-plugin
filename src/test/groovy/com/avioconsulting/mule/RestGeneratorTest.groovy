@@ -359,11 +359,35 @@ class RestGeneratorTest implements FileUtil {
     @Test
     void xml_before_router() {
         // arrange
+        def xmlBeforeRouter = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<logger xmlns="http://some/namespace" xsi:schemaLocation="http://some/namespace http://some/namespace.xsd"/>"""
 
         // act
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               true,
+                               'theProject',
+                               '${http.listener.config}',
+                               xmlBeforeRouter,
+                               null)
 
         // assert
-        Assert.fail("write it")
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def flowNode = xmlNode.flow.find { Node node ->
+            node.'@name' == 'api-stuff-v1-main'
+        }
+        assert flowNode
+        def kids = flowNode.children().collect { node -> node.name().toString() as String }
+        assertThat kids,
+                   is(equalTo([
+                           '{http://www.mulesoft.org/schema/mule/http}listener',
+                           '{http://some/namespace}logger',
+                           '{http://www.mulesoft.org/schema/mule/mule-apikit}router',
+                           '{http://www.mulesoft.org/schema/mule/core}error-handler'
+                   ]))
     }
 
     @Test
