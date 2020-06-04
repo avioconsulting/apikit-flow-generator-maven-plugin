@@ -3,6 +3,7 @@ package com.avioconsulting.mule
 import groovy.xml.Namespace
 import groovy.xml.QName
 import org.apache.commons.io.FileUtils
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
@@ -91,6 +92,36 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void httpResponse() {
+        // arrange
+
+        // act
+
+        // assert
+        Assert.fail("write it")
+    }
+
+    @Test
+    void httpErrorResponse() {
+        // arrange
+
+        // act
+
+        // assert
+        Assert.fail("write it")
+    }
+
+    @Test
+    void httpErrorAndSuccessResponse() {
+        // arrange
+
+        // act
+
+        // assert
+        Assert.fail("write it")
     }
 
     @Test
