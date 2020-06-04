@@ -93,7 +93,8 @@ class RestGenerator implements FileUtil {
                            apiBaseName,
                            insertApiNameInListenerPath,
                            httpListenerConfigName,
-                           insertXmlBeforeRouter)
+                           insertXmlBeforeRouter,
+                           errorHandler)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -112,7 +113,8 @@ class RestGenerator implements FileUtil {
                                            String apiBaseName,
                                            boolean insertApiNameInListenerPath,
                                            String httpListenerConfigName,
-                                           String insertXmlBeforeRouter) {
+                                           String insertXmlBeforeRouter,
+                                           String errorHandler) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
@@ -125,25 +127,34 @@ class RestGenerator implements FileUtil {
         parameterizeApiKitConfig(rootElement)
         removeConsole(rootElement,
                       apiBaseName)
+        def mainFlow = getMainFlow(rootElement,
+                                   apiBaseName)
         if (insertXmlBeforeRouter) {
-            doInsertXmlBeforeRouter(rootElement,
-                                    apiBaseName,
+            doInsertXmlBeforeRouter(mainFlow,
                                     insertXmlBeforeRouter)
+        }
+        if (errorHandler) {
+            replaceErrorHandler(mainFlow,
+                                errorHandler)
         }
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document,
                          new FileWriter(flowPath))
     }
 
-    private static void doInsertXmlBeforeRouter(Element rootElement,
-                                                String apiBaseName,
-                                                String insertXmlBeforeRouter) {
+    private static Element getMainFlow(Element rootElement,
+                                       String apiBaseName) {
         def lookFor = "${apiBaseName}-main"
-        def mainFlow = rootElement.getChildren('flow',
-                                               core).find { element ->
+        Element mainFlow = rootElement.getChildren('flow',
+                                                   core).find { element ->
             element.getAttribute('name').value == lookFor
         }
         assert mainFlow: "Was looking for flow ${lookFor}"
+        return mainFlow
+    }
+
+    private static void doInsertXmlBeforeRouter(Element mainFlow,
+                                                String insertXmlBeforeRouter) {
         def router = mainFlow.getChild('router',
                                        Namespace.getNamespace('http://www.mulesoft.org/schema/mule/mule-apikit'))
         assert router
@@ -154,6 +165,19 @@ class RestGenerator implements FileUtil {
         def elementToInsert = newXmlDocument.detachRootElement()
         mainFlow.addContent(routerIndex,
                             elementToInsert)
+    }
+
+    private static void replaceErrorHandler(Element mainFlow,
+                                            String errorHandlerXml) {
+        def existingErrorHandler = mainFlow.getChild('error-handler',
+                                                     core)
+        assert existingErrorHandler
+        mainFlow.removeContent(existingErrorHandler)
+        def builder = new SAXBuilder()
+        def newXmlDocument = builder.build(new StringReader(errorHandlerXml))
+        // we're "moving" the element from 1 doc to another so have to detach it
+        def elementToInsert = newXmlDocument.detachRootElement()
+        mainFlow.addContent(elementToInsert)
     }
 
     private static void removeConsole(Element rootElement,
