@@ -3,6 +3,7 @@ package com.avioconsulting.mule
 import groovy.xml.Namespace
 import groovy.xml.QName
 import org.apache.commons.io.FileUtils
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
@@ -353,5 +354,35 @@ class RestGeneratorTest implements FileUtil {
             node.'@name' == 'api-stuff-v1-console'
         }
         assert !flowNode
+    }
+
+    @Test
+    void xml_before_router() {
+        // arrange
+
+        // act
+
+        // assert
+        Assert.fail("write it")
+    }
+
+    @Test
+    void custom_error_handler() {
+        // arrange
+
+        // act
+
+        // assert
+        Assert.fail("write it")
+    }
+
+    @Test
+    void both_xml_before_router_and_custom_error_handler() {
+        // arrange
+
+        // act
+
+        // assert
+        Assert.fail("write it")
     }
 }
