@@ -81,7 +81,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -101,7 +103,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                false,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -120,7 +124,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
         def flowXmlFile = join(appDir,
                                'api-stuff-v1.xml')
         assert flowXmlFile.exists()
@@ -134,7 +140,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         assertThat flowXmlFile.text,
@@ -157,7 +165,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         assertThat ramlFile.text,
@@ -180,7 +190,9 @@ class RestGeneratorTest implements FileUtil {
                                true,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         assertThat ramlFile.text,
@@ -201,7 +213,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -221,7 +235,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               'some-http-config')
+                               'some-http-config',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -242,7 +258,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -263,7 +281,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -291,7 +311,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
@@ -321,7 +343,9 @@ class RestGeneratorTest implements FileUtil {
                                false,
                                true,
                                'theProject',
-                               '${http.listener.config}')
+                               '${http.listener.config}',
+                               null,
+                               null)
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
