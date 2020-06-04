@@ -360,7 +360,7 @@ class RestGeneratorTest implements FileUtil {
     void xml_before_router() {
         // arrange
         def xmlBeforeRouter = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<logger xmlns="http://some/namespace" xsi:schemaLocation="http://some/namespace http://some/namespace.xsd"/>"""
+<logger xmlns="http://some/namespace" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://some/namespace http://some/namespace.xsd"/>"""
 
         // act
         RestGenerator.generate(tempDir,

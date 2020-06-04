@@ -148,8 +148,12 @@ class RestGenerator implements FileUtil {
                                        Namespace.getNamespace('http://www.mulesoft.org/schema/mule/mule-apikit'))
         assert router
         def routerIndex = mainFlow.indexOf(router)
+        def builder = new SAXBuilder()
+        def newXmlDocument = builder.build(new StringReader(insertXmlBeforeRouter))
+        // we're "moving" the element from 1 doc to another so have to detach it
+        def elementToInsert = newXmlDocument.detachRootElement()
         mainFlow.addContent(routerIndex,
-                            new Element('foobarnope'))
+                            elementToInsert)
     }
 
     private static void removeConsole(Element rootElement,
