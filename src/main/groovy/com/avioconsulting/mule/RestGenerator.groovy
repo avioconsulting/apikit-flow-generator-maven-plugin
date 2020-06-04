@@ -92,7 +92,8 @@ class RestGenerator implements FileUtil {
                            apiVersion,
                            apiBaseName,
                            insertApiNameInListenerPath,
-                           httpListenerConfigName)
+                           httpListenerConfigName,
+                           insertXmlBeforeRouter)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -110,7 +111,8 @@ class RestGenerator implements FileUtil {
                                            String apiVersion,
                                            String apiBaseName,
                                            boolean insertApiNameInListenerPath,
-                                           String httpListenerConfigName) {
+                                           String httpListenerConfigName,
+                                           String insertXmlBeforeRouter) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
@@ -123,9 +125,31 @@ class RestGenerator implements FileUtil {
         parameterizeApiKitConfig(rootElement)
         removeConsole(rootElement,
                       apiBaseName)
+        if (insertXmlBeforeRouter) {
+            doInsertXmlBeforeRouter(rootElement,
+                                    apiBaseName,
+                                    insertXmlBeforeRouter)
+        }
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document,
                          new FileWriter(flowPath))
+    }
+
+    private static void doInsertXmlBeforeRouter(Element rootElement,
+                                                String apiBaseName,
+                                                String insertXmlBeforeRouter) {
+        def lookFor = "${apiBaseName}-main"
+        def mainFlow = rootElement.getChildren('flow',
+                                               core).find { element ->
+            element.getAttribute('name').value == lookFor
+        }
+        assert mainFlow: "Was looking for flow ${lookFor}"
+        def router = mainFlow.getChild('router',
+                                       Namespace.getNamespace('http://www.mulesoft.org/schema/mule/mule-apikit'))
+        assert router
+        def routerIndex = mainFlow.indexOf(router)
+        mainFlow.addContent(routerIndex,
+                            new Element('foobarnope'))
     }
 
     private static void removeConsole(Element rootElement,
