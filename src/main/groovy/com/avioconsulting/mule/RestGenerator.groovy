@@ -96,7 +96,9 @@ class RestGenerator implements FileUtil {
                            insertApiNameInListenerPath,
                            httpListenerConfigName,
                            insertXmlBeforeRouter,
-                           errorHandler)
+                           errorHandler,
+                           httpResponse,
+                           httpErrorResponse)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -116,7 +118,9 @@ class RestGenerator implements FileUtil {
                                            boolean insertApiNameInListenerPath,
                                            String httpListenerConfigName,
                                            String insertXmlBeforeRouter,
-                                           String errorHandler) {
+                                           String errorHandler,
+                                           String httpResponse,
+                                           String httpErrorResponse) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
@@ -125,7 +129,9 @@ class RestGenerator implements FileUtil {
                             apiName,
                             apiVersion,
                             insertApiNameInListenerPath,
-                            httpListenerConfigName)
+                            httpListenerConfigName,
+                            httpResponse,
+                            httpErrorResponse)
         parameterizeApiKitConfig(rootElement)
         removeConsole(rootElement,
                       apiBaseName)
@@ -247,7 +253,9 @@ class RestGenerator implements FileUtil {
                                             String apiName,
                                             String apiVersion,
                                             boolean insertApiNameInListenerPath,
-                                            String httpListenerConfigName) {
+                                            String httpListenerConfigName,
+                                            String httpResponse,
+                                            String httpErrorResponse) {
         def listeners = flowNode.getChildren('flow',
                                              core)
                 .collect { flow ->
@@ -271,6 +279,16 @@ class RestGenerator implements FileUtil {
             apiParts << (isConsole ? 'console' : 'api')
             apiParts += [apiVersion, '*']
             listenerPathAttribute.value = '/' + apiParts.join('/')
+            if (httpResponse) {
+                def existingResponse = listener.getChild('response',
+                                                         http)
+                listener.removeContent(existingResponse)
+                def builder = new SAXBuilder()
+                def newXmlDocument = builder.build(new StringReader(httpResponse))
+                // we're "moving" the element from 1 doc to another so have to detach it
+                def elementToInsert = newXmlDocument.detachRootElement()
+                listener.addContent(elementToInsert)
+            }
         }
     }
 }

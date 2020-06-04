@@ -98,7 +98,7 @@ class RestGeneratorTest implements FileUtil {
     void httpResponse() {
         // arrange
         def httpResponse = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<response xmlns="http://www.mulesoft.org/schema/mule/http" statusCode="400/>
+<response xmlns="http://www.mulesoft.org/schema/mule/http" statusCode="400"/>
 """
         // act
         RestGenerator.generate(tempDir,
