@@ -3,7 +3,6 @@ package com.avioconsulting.mule
 import groovy.xml.Namespace
 import groovy.xml.QName
 import org.apache.commons.io.FileUtils
-import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
