@@ -393,11 +393,39 @@ class RestGeneratorTest implements FileUtil {
     @Test
     void custom_error_handler() {
         // arrange
+        def errorHandler = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<error-handler xmlns="http://www.mulesoft.org/schema/mule/core" ref="howdy"/>
+"""
 
         // act
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               true,
+                               'theProject',
+                               '${http.listener.config}',
+                               null,
+                               errorHandler)
 
         // assert
-        Assert.fail("write it")
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def flowNode = xmlNode.flow.find { Node node ->
+            node.'@name' == 'api-stuff-v1-main'
+        } as Node
+        assert flowNode
+        def kidNames = flowNode.children().collect { node -> node.name().toString() as String }
+        assertThat kidNames,
+                   is(equalTo([
+                           '{http://www.mulesoft.org/schema/mule/http}listener',
+                           '{http://www.mulesoft.org/schema/mule/mule-apikit}router',
+                           '{http://www.mulesoft.org/schema/mule/core}error-handler'
+                   ]))
+        def errorHandlerNode = flowNode.children().last() as Node
+        assert errorHandlerNode
+        assertThat errorHandlerNode.'@ref',
+                   is(equalTo('howdy'))
     }
 
     @Test
