@@ -50,6 +50,12 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'http.listener.config.name')
     private String httpListenerConfigName
 
+    @Parameter(property = 'temp.file.of.xml.to.insert.before.router')
+    private File tempFileOfXmlToInsertBeforeRouter
+
+    @Parameter(property = 'temp.file.of.error.handler.xml.to.replace.stock.with')
+    private File tempFileErrorHandlerXml
+
     @Component
     protected MavenProject mavenProject
 
@@ -109,6 +115,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                                useCloudHub,
                                insertApiNameInListenerPath,
                                mavenProject.artifactId,
-                               httpListenerConfigName)
+                               httpListenerConfigName,
+                               this.tempFileOfXmlToInsertBeforeRouter?.text,
+                               this.tempFileErrorHandlerXml?.text)
     }
 }

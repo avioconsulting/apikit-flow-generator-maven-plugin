@@ -35,7 +35,9 @@ class RestGenerator implements FileUtil {
                     boolean useCloudHub,
                     boolean insertApiNameInListenerPath,
                     String mavenProjectName,
-                    String httpListenerConfigName) {
+                    String httpListenerConfigName,
+                    String insertXmlBeforeRouter,
+                    String errorHandler) {
         // without runtime edition EE, we won't use weaves in the output
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
         def mainDir = join(baseDirectory,
