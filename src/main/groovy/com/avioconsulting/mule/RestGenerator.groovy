@@ -280,15 +280,28 @@ class RestGenerator implements FileUtil {
             apiParts += [apiVersion, '*']
             listenerPathAttribute.value = '/' + apiParts.join('/')
             if (httpResponse) {
-                def existingResponse = listener.getChild('response',
-                                                         http)
-                listener.removeContent(existingResponse)
-                def builder = new SAXBuilder()
-                def newXmlDocument = builder.build(new StringReader(httpResponse))
-                // we're "moving" the element from 1 doc to another so have to detach it
-                def elementToInsert = newXmlDocument.detachRootElement()
-                listener.addContent(elementToInsert)
+                replaceResponse(listener,
+                                'response',
+                                httpResponse)
+            }
+            if (httpErrorResponse) {
+                replaceResponse(listener,
+                                'error-response',
+                                httpErrorResponse)
             }
         }
+    }
+
+    private static void replaceResponse(Element listener,
+                                        String responseType,
+                                        String newResponse) {
+        def existingResponse = listener.getChild(responseType,
+                                                 http)
+        listener.removeContent(existingResponse)
+        def builder = new SAXBuilder()
+        def newXmlDocument = builder.build(new StringReader(newResponse))
+        // we're "moving" the element from 1 doc to another so have to detach it
+        def elementToInsert = newXmlDocument.detachRootElement()
+        listener.addContent(elementToInsert)
     }
 }
