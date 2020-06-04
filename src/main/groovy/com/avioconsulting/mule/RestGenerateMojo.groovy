@@ -56,6 +56,12 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'temp.file.of.error.handler.xml.to.replace.stock.with')
     private File tempFileErrorHandlerXml
 
+    @Parameter(property = 'temp.file.of.xml.http.response')
+    private File tempFileOfHttpResponseXml
+
+    @Parameter(property = 'temp.file.of.xml.http.error.response')
+    private File tempFileOfHttpErrorResponseXml
+
     @Component
     protected MavenProject mavenProject
 
@@ -117,6 +123,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                                mavenProject.artifactId,
                                httpListenerConfigName,
                                this.tempFileOfXmlToInsertBeforeRouter?.text,
-                               this.tempFileErrorHandlerXml?.text)
+                               this.tempFileErrorHandlerXml?.text,
+                               this.tempFileOfHttpResponseXml?.text,
+                               this.tempFileOfHttpErrorResponseXml?.text)
     }
 }

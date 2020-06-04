@@ -37,7 +37,9 @@ class RestGenerator implements FileUtil {
                     String mavenProjectName,
                     String httpListenerConfigName,
                     String insertXmlBeforeRouter,
-                    String errorHandler) {
+                    String errorHandler,
+                    String httpResponse,
+                    String httpErrorResponse) {
         // without runtime edition EE, we won't use weaves in the output
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
         def mainDir = join(baseDirectory,
