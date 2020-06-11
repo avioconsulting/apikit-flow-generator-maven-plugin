@@ -105,7 +105,7 @@ class RestGenerator implements FileUtil {
                                           String apiName,
                                           String mavenProjectName) {
         def ramlText = ramlFile.text
-        def baseUri = "https://${mavenProjectName}.cloudhub.io/${apiName}/api/{version}"
+        def baseUri = "https://${mavenProjectName}.cloudhub.io/${apiName}/{version}"
         def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
                                             "baseUri: ${baseUri}")
         ramlFile.write fixedRaml
@@ -275,7 +275,6 @@ class RestGenerator implements FileUtil {
             if (insertApiNameInListenerPath) {
                 apiParts << apiName
             }
-            apiParts << 'api'
             apiParts += [apiVersion, '*']
             listenerPathAttribute.value = '/' + apiParts.join('/')
             if (httpResponse) {

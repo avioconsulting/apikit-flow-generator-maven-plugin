@@ -204,7 +204,7 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         def listeners = xmlNode.flow[http.listener].'@path'
         assertThat listeners,
-                   is(equalTo(['/api/v1/*']))
+                   is(equalTo(['/v1/*']))
     }
 
     @Test
@@ -299,7 +299,7 @@ class RestGeneratorTest implements FileUtil {
         assertThat ramlFile.text,
                    is(not(equalTo(origRamlText)))
         assertThat ramlFile.text,
-                   is(containsString('baseUri: https://theProject.cloudhub.io/stuff/api/{version}'))
+                   is(containsString('baseUri: https://theProject.cloudhub.io/stuff/{version}'))
     }
 
     @Test
@@ -373,7 +373,7 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         def listeners = xmlNode.flow[http.listener].'@path'
         assertThat listeners,
-                   is(equalTo(['/stuff/api/v1/*']))
+                   is(equalTo(['/stuff/v1/*']))
     }
 
     @Test
