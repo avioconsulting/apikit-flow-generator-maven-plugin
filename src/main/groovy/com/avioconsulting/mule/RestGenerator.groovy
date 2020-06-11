@@ -125,6 +125,8 @@ class RestGenerator implements FileUtil {
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
         removeHttpListenerConfigs(rootElement)
+        removeConsole(rootElement,
+                      apiBaseName)
         modifyHttpListeners(rootElement,
                             apiName,
                             apiVersion,
@@ -133,8 +135,6 @@ class RestGenerator implements FileUtil {
                             httpResponse,
                             httpErrorResponse)
         parameterizeApiKitConfig(rootElement)
-        removeConsole(rootElement,
-                      apiBaseName)
         def mainFlow = getMainFlow(rootElement,
                                    apiBaseName)
         if (insertXmlBeforeRouter) {
@@ -271,12 +271,11 @@ class RestGenerator implements FileUtil {
             // by using paths
             def listenerPathAttribute = listener.getAttribute('path')
             assert listenerPathAttribute
-            def isConsole = listenerPathAttribute.value.contains('console')
             def apiParts = []
             if (insertApiNameInListenerPath) {
                 apiParts << apiName
             }
-            apiParts << (isConsole ? 'console' : 'api')
+            apiParts << 'api'
             apiParts += [apiVersion, '*']
             listenerPathAttribute.value = '/' + apiParts.join('/')
             if (httpResponse) {
