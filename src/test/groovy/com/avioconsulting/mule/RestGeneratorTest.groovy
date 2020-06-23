@@ -16,6 +16,7 @@ class RestGeneratorTest implements FileUtil {
     public static final Namespace apiKit = new Namespace(RestGenerator.apiKit.URI)
     public static final Namespace doc = new Namespace(RestGenerator.doc.URI)
     public static final Namespace ee = new Namespace(RestGenerator.ee.URI)
+    public static final Namespace xsi = new Namespace('http://www.w3.org/2001/XMLSchema-instance')
 
     @Before
     void setup() {
@@ -91,6 +92,40 @@ class RestGeneratorTest implements FileUtil {
         def xmlNode = getXmlNode('api-stuff-v1.xml')
         assertThat xmlNode.flow[0].@name,
                    is(equalTo('api-stuff-v1-main'))
+    }
+
+    @Test
+    void schemaLocation() {
+        // arrange
+
+        // act
+        RestGenerator.generate(tempDir,
+                               'api-stuff-v1.raml',
+                               'stuff',
+                               'v1',
+                               false,
+                               true,
+                               'theProject',
+                               '${http.listener.config}',
+                               null,
+                               null,
+                               null,
+                               null)
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        assertThat 'For some reason EE is not included',
+                   xmlNode.attributes()[xsi.schemaLocation].split(' ').collect { l -> l.toString() },
+                   is(equalTo([
+                           'http://www.mulesoft.org/schema/mule/core',
+                           'http://www.mulesoft.org/schema/mule/core/current/mule.xsd',
+                           'http://www.mulesoft.org/schema/mule/http',
+                           'http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd',
+                           'http://www.mulesoft.org/schema/mule/mule-apikit',
+                           'http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd',
+                           'http://www.mulesoft.org/schema/mule/ee/core',
+                           'http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd'
+                   ]))
     }
 
     @Test
