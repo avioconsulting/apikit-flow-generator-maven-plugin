@@ -124,6 +124,11 @@ class RestGenerator implements FileUtil {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
+        def schemaLocation = rootElement.getAttribute('schemaLocation',
+                                                      xsi)
+        // for some reason, the EE schema location is not being included automatically, even when the DWs
+        // are generated code from the scaffolder
+        schemaLocation.value = schemaLocation.value + ee.URI + ' ' + 'http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd'
         removeHttpListenerConfigs(rootElement)
         removeConsole(rootElement,
                       apiBaseName)
