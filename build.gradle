@@ -2,8 +2,8 @@ import groovy.xml.XmlUtil
 import org.apache.tools.ant.taskdefs.condition.Os
 
 group 'com.avioconsulting.mule'
-def studioVersion = '7.4.2'
-version "${studioVersion}.7"
+def studioVersion = '7.5.1'
+version "${studioVersion}.1"
 
 configurations {
     provided
