@@ -1,0 +1,84 @@
+name: Maven Build and Deploy
+
+on:
+  push:
+    branches:
+      - 'mule4/master'
+      - 'feature/**'
+  pull_request:
+    branches:
+      - 'mule4/master'
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'adopt'
+          server-id: github
+          server-username: GIT_USERNAME
+          server-password: GIT_PASSWORD
+      - name: Cache for maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven
+
+      - name: Set Version
+        id: set-version
+        run: echo ::set-output name=version::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+
+      - name: Print Version
+        run: echo "Version ${{ steps.set-version.outputs.version }}"
+
+      - name: Compile
+        run: mvn compile
+
+      - name: Verify
+        run: mvn --batch-mode verify
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: ./target/surefire-reports/*.xml
+
+      - name: Publish package
+        if: github.event_name != 'pull_request'
+        run: mvn --batch-mode deploy -DskipTests
+        env:
+          GIT_USERNAME: ${{ secrets.GIT_USER }}
+          GIT_PASSWORD: ${{ secrets.GIT_TOKEN }}
+
+      - name: Perform Release
+        if: ${{ !contains(steps.set-version.outputs.version, 'SNAPSHOT') && github.event_name != 'pull_request' }}
+        run: |
+          echo "Releasing version ${{ steps.set-version.outputs.version }}"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a v${{ steps.set-version.outputs.version }} -m "Version ${{ steps.set-version.outputs.version }}"
+          mvn clean build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion}-SNAPSHOT -DprocessAllModules versions:commit
+          find . -name 'pom.xml' | xargs git add
+          git commit -m "Incrementing to next SNAPSHOT patch version"
+          git push --follow-tags
+
+      - name: Create Github Release
+        if: ${{ !contains(steps.set-version.outputs.version, 'SNAPSHOT') && github.event_name != 'pull_request' }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.set-version.outputs.version }}
+          release_name: Release v${{ steps.set-version.outputs.version }}
+          body: ''
+          draft: false
+          prerelease: false
