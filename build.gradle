@@ -29,30 +29,15 @@ sourceSets {
 
 sourceCompatibility = 1.8
 
-def getMavenCreds = { String id ->
-    def m2Dir = new File(System.getProperty('user.home'),
-                         '.m2')
-    def settingsXmlPath = new File(m2Dir,
-                                   'settings.xml')
-    assert settingsXmlPath.exists()
-    def xmlNode = new XmlParser().parse(settingsXmlPath.absolutePath)
-    def serverCreds = xmlNode.servers.server.find { node -> node.id.text() == id }
-    assert serverCreds != null
-    [user: serverCreds.username.text(), password: serverCreds.password.text()]
-}
-
-def eeCreds = getMavenCreds('avio-mule-ee-releases')
-
 repositories {
     mavenLocal()
     mavenCentral()
-    jcenter()
     maven {
-        url "http://repository.mulesoft.org/releases"
+        url "https://repository.mulesoft.org/releases"
     }
 }
 
-uploadArchives {
+/*uploadArchives {
     repositories {
         mavenDeployer {
             repository(url: 'https://devops.avioconsulting.com/nexus/repository/avio-releases/') {
@@ -61,48 +46,13 @@ uploadArchives {
             }
         }
     }
-}
-
-def getStudioPluginsDir() {
-    String studioDir
-    try {
-        studioDir = this.getProperty('studio.dir') as String
-    }
-    catch (e) {
-        throw new Exception('set studio.dir in either ~/gradle.properties or gradle.properties in this directory')
-    }
-    if (Os.isFamily(Os.FAMILY_MAC)) {
-        def parts = [studioDir, 'Contents', 'Eclipse']
-        studioDir = parts.join('/')
-    }
-    studioDir
-}
-
-// this is inside an OSGI bundle that's only installed with Studio
-// need to get the JAR from inside
-def getRestScaffolder = {
-    def studioDir = getStudioPluginsDir()
-    def files = new FileNameFinder().getFileNames("${studioDir}/plugins",
-                                                  "org.mule.tooling.apikit.deps_${studioVersion}*.jar")
-    assert !files.empty
-    def jarFile = new File(files[0])
-    println "Found JAR file ${jarFile} in Studio dir"
-    def result = zipTree(jarFile).find {
-        File file -> file.name.startsWith('mule-apikit-scaffolder')
-    }
-    println "Identified scaffolder ${result}"
-    return result
-}
+}*/
 
 clean {
     // this is a generated artifact
     delete 'pom.xml'
 }
 
-// clean removes the expanded file, so bring it back
-clean.doLast {
-    getRestScaffolder()
-}
 
 // Maven plugin's mojo scanner has problems with certain classes when trying to generate plugin.xml based on class
 // scanning. Gradle is a bit more flexible and we can create a POM from our Gradle build, temporarily exclude
@@ -147,7 +97,7 @@ task pluginDescriptor(type: Exec) {
         muleReleasesRepo.appendNode('id',
                                     'mulesoft-releases')
         muleReleasesRepo.appendNode('url',
-                                    'http://repository.mulesoft.org/releases/')
+                                    'https://repository.mulesoft.org/releases/')
         XmlUtil.serialize(pomNode,
                           new FileWriter(pom))
     }
@@ -169,26 +119,9 @@ compileGroovy.doLast {
 }
 
 dependencies {
-    def scaffolder = getRestScaffolder()
-    assert scaffolder.exists()
-    println "REST Scaffolder is ${scaffolder}"
-    bundled files(scaffolder.absolutePath)
-    // indirect
-    compile 'org.mule.runtime:mule-api:1.1.5'
-    compile 'org.mule.apikit:parser-service:2.0.1'
-    compile 'jaxen:jaxen:1.1.4'
-    compile 'org.mule.weave:runtime:2.1.8'
-    compile 'org.mule.weave:core-modules:2.1.8'
-    compile group: 'org.mule.modules',
-            name: 'mule-apikit-module',
-            version: '1.3.4',
-            classifier: 'mule-plugin'
+    compile 'org.mule.apikit:mule-apikit-scaffolder:2.2.0'
     // filenamefinder
     compile 'org.apache.ant:ant:1.9.2'
-    // direct
-    compile group: 'org.jdom',
-            name: 'jdom2',
-            version: '2.0.5'
     // SOAP direct
     compile group: 'wsdl4j',
             name: 'wsdl4j',
