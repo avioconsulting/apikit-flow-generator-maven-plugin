@@ -106,11 +106,17 @@ class HttpClientWrapper implements HttpRequestInterceptor {
         httpClient.execute(request).with { response ->
             def result = assertSuccessfulResponseAndReturnJson(response,
                                                                "authenticate to Anypoint as '${username}'")
+            if (result.url && responseHasCookie(response, "mulesoft.vaas.sess")) {
+                throw new Exception("Unable to authenticate to Anypoint as '${username}'. User requires multi-factored authentication.")
+            }
             logger.println 'Successfully authenticated'
             accessToken = result.access_token
         }
     }
-
+    private def responseHasCookie(CloseableHttpResponse response, String name){
+        def hasCookie = response.getHeaders("Set-Cookie").any {h -> h.value.split("=")[0].equalsIgnoreCase(name)}
+        hasCookie
+    }
     static def assertSuccessfulResponse(CloseableHttpResponse response,
                                         String failureContext) {
         def status = response.statusLine.statusCode
