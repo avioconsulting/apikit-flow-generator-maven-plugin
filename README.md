@@ -47,3 +47,4 @@ mvn apikit-flow-generator:generateFlowRest \
     -Danypoint.password= \
     -DdesignCenter.project.name=
 ```
+_**NOTE:** Anypoint users with MFA enabled or SSO Users are not supported by this plugin._

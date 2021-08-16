@@ -155,6 +155,38 @@ class HttpClientWrapperTest extends BaseTest {
     }
 
     @Test
+    void mfa_auth_required() {
+        // arrange
+        withHttpServer { HttpServerRequest request ->
+            def payload = null
+            if (request.uri() == '/accounts/login') {
+                payload = [
+                        url: 'https://sfverify',
+                        body: {
+                            request: 'request.jwt.token'
+                        }
+                ]
+            }
+            request.response().with {
+                statusCode = 200
+                putHeader('Content-Type',
+                        'application/json')
+                putHeader('Set-Cookie',
+                        'mulesoft.vaas.sess=vass-token')
+                end(JsonOutput.toJson(payload))
+            }
+        }
+
+        // act
+        def exception = GroovyAssert.shouldFail {
+            clientWrapper.authenticate()
+        }
+
+        // assert
+        MatcherAssert.assertThat exception.message,
+                is(equalTo("Unable to authenticate to Anypoint as 'the user'. User requires multi-factored authentication.".toString()))
+    }
+    @Test
     void authenticate_fails() {
         // arrange
         withHttpServer { HttpServerRequest request ->
