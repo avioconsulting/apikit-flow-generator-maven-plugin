@@ -19,7 +19,7 @@ In your POM, add following plugin repository in `pluginRepositories` tag (add if
 In your `~/.m2/settings.xml`, add credentials for server id `github-avio-pkg`, like below -
 ```xml
     <server>
-        <id>github</id>
+        <id>github-avio-pkg</id>
         <username>YOUR_GIT_USER</username>
         <password>YOUR_GIT_PERSONAL_TOKEN</password>
     </server>
