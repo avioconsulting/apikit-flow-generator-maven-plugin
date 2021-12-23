@@ -19,12 +19,14 @@ In your POM, add following plugin repository in `pluginRepositories` tag (add if
 In your `~/.m2/settings.xml`, add credentials for server id `github-avio-pkg`, like below -
 ```xml
     <server>
-        <id>github</id>
+        <id>github-avio-pkg</id>
         <username>YOUR_GIT_USER</username>
         <password>YOUR_GIT_PERSONAL_TOKEN</password>
     </server>
 ```
 See [working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token) for more details on Github Package Authentication.
+
+**NOTE:** The Github Personal Token must have **read:packages** permission.
 
 **Step1:** To use this plugin, add following entry to maven pom.xml -
 ```xml
