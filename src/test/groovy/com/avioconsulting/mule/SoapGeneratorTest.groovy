@@ -8,8 +8,8 @@ import org.xmlunit.builder.Input
 import org.xmlunit.matchers.CompareMatcher
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.CoreMatchers.containsString
+import static org.hamcrest.CoreMatchers.is
 import static org.junit.Assert.assertThat
 
 class SoapGeneratorTest implements FileUtil {

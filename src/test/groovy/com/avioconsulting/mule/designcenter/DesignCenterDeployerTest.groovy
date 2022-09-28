@@ -4,14 +4,14 @@ import groovy.json.JsonOutput
 import groovy.test.GroovyAssert
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpServerRequest
+import org.hamcrest.CoreMatchers
 import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
 import org.junit.Before
 import org.junit.Test
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.CoreMatchers.equalTo
+import static org.hamcrest.CoreMatchers.is
 
 class DesignCenterDeployerTest extends BaseTest {
     private DesignCenterDeployer deployer
@@ -102,7 +102,7 @@ class DesignCenterDeployerTest extends BaseTest {
 
         // assert
         MatcherAssert.assertThat exception.message,
-                                 is(Matchers.containsString("Unable to find ID for Design Center project 'not found project'"))
+                                 is(CoreMatchers.containsString("Unable to find ID for Design Center project 'not found project'"))
     }
 
     @Test

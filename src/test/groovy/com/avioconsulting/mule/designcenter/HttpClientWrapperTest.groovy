@@ -5,12 +5,12 @@ import groovy.json.JsonSlurper
 import groovy.test.GroovyAssert
 import io.vertx.core.http.HttpServerRequest
 import org.apache.http.client.methods.HttpGet
+import org.hamcrest.CoreMatchers
 import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
 import org.junit.Test
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.CoreMatchers.*
 
 class HttpClientWrapperTest extends BaseTest {
     @Test
@@ -366,7 +366,7 @@ class HttpClientWrapperTest extends BaseTest {
 
         // assert
         MatcherAssert.assertThat exception.message,
-                                 is(Matchers.containsString("You specified Anypoint organization 'the-org-name' but that organization was not found. Options are [the-other-org-name]"))
+                                 is(CoreMatchers.containsString("You specified Anypoint organization 'the-org-name' but that organization was not found. Options are [the-other-org-name]"))
     }
 
     @Test

@@ -2,11 +2,12 @@ package com.avioconsulting.mule
 
 import groovy.xml.Namespace
 import groovy.xml.QName
+import groovy.xml.XmlParser
 import org.apache.commons.io.FileUtils
 import org.junit.Before
 import org.junit.Test
 
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.CoreMatchers.*
 import static org.junit.Assert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
@@ -114,8 +115,9 @@ class RestGeneratorTest implements FileUtil {
 
         // assert
         def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def xmlAttribute = xsi.schemaLocation
         assertThat 'For some reason EE is not included',
-                   xmlNode.attributes()[xsi.schemaLocation].split(' ').collect { l -> l.toString() },
+                   xmlNode.attribute(xmlAttribute).split(' ').collect { l -> l.toString() },
                    is(equalTo([
                            'http://www.mulesoft.org/schema/mule/core',
                            'http://www.mulesoft.org/schema/mule/core/current/mule.xsd',
