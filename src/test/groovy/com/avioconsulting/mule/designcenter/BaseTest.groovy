@@ -1,5 +1,7 @@
 package com.avioconsulting.mule.designcenter
 
+import com.avioconsulting.mule.designcenter.api.models.credentials.ConnectedAppCredential
+import com.avioconsulting.mule.designcenter.api.models.credentials.UsernamePasswordCredential
 import groovy.json.JsonOutput
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
@@ -17,6 +19,7 @@ import java.util.concurrent.CompletableFuture
 class BaseTest {
     protected HttpServer httpServer
     protected HttpClientWrapper clientWrapper
+    protected HttpClientWrapper clientWrapperConnectedApp
     protected Handler<HttpServerRequest> closure
 
     @Rule
@@ -37,10 +40,16 @@ class BaseTest {
         httpServer = createServer()
         closure = null
         clientWrapper = new HttpClientWrapper("http://localhost:${httpServer.actualPort()}",
-                                              'the user',
-                                              'the password',
+                                              new UsernamePasswordCredential('the user',
+                                              'the password'),
                                               new TestLogger(),
                                               'the-org-name')
+        clientWrapperConnectedApp = new HttpClientWrapper("http://localhost:${httpServer.actualPort()}",
+                new ConnectedAppCredential(
+                'the client',
+                'the secret'),
+                new TestLogger(),
+                'the-org-name')
     }
 
     @After

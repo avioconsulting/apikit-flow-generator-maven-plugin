@@ -1,5 +1,8 @@
 package com.avioconsulting.mule.designcenter
 
+import com.avioconsulting.mule.designcenter.api.models.credentials.ConnectedAppCredential
+import com.avioconsulting.mule.designcenter.api.models.credentials.Credential
+import com.avioconsulting.mule.designcenter.api.models.credentials.UsernamePasswordCredential
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import org.apache.http.HttpException
@@ -16,8 +19,6 @@ import org.apache.http.protocol.HttpContext
 import org.apache.maven.plugin.logging.Log
 
 class HttpClientWrapper implements HttpRequestInterceptor {
-    private final String username
-    private final String password
     private String accessToken
     private String ownerGuid
     private final Log logger
@@ -25,15 +26,14 @@ class HttpClientWrapper implements HttpRequestInterceptor {
     private final CloseableHttpClient httpClient
     private final String anypointOrganizationName
     private String anypointOrganizationId
+    private Credential credential
 
     HttpClientWrapper(String baseUrl,
-                      String username,
-                      String password,
+                      Credential credential,
                       Log logger,
                       String anypointOrganizationName = null) {
+        this.credential = credential
         this.anypointOrganizationName = anypointOrganizationName
-        this.password = password
-        this.username = username
         this.logger = logger
         this.baseUrl = baseUrl
         this.httpClient = HttpClients.custom()
@@ -50,7 +50,7 @@ class HttpClientWrapper implements HttpRequestInterceptor {
 
     private def authenticate() {
         if (!this.accessToken) {
-            fetchAccessToken()
+            fetchAccessToken(this.credential)
             fetchUserInfo()
         }
     }
@@ -75,7 +75,7 @@ class HttpClientWrapper implements HttpRequestInterceptor {
                     org.id == this.anypointOrganizationId
                 }?.name
                 if (name) {
-                    logger.println("Using default organization for ${username} of '${name}'")
+                    logger.println("Using default organization for ${this.credential.getPrincipal()} of '${name}'")
                 } else {
                     throw new Exception('No Anypoint org was specified and was unable to find a default one! This should not happen!')
                 }
@@ -91,11 +91,11 @@ class HttpClientWrapper implements HttpRequestInterceptor {
         }
     }
 
-    private def fetchAccessToken() {
-        logger.println "Authenticating to Anypoint as user '${username}'"
+    private def fetchAccessToken(UsernamePasswordCredential cred) {
+        logger.println "Authenticating to Anypoint as user '${cred.username}'"
         def payload = [
-                username: username,
-                password: password
+                username: cred.username,
+                password: cred.password
         ]
         def request = new HttpPost("${baseUrl}/accounts/login").with {
             setEntity(new StringEntity(JsonOutput.toJson(payload)))
@@ -105,18 +105,40 @@ class HttpClientWrapper implements HttpRequestInterceptor {
         }
         httpClient.execute(request).with { response ->
             def result = assertSuccessfulResponseAndReturnJson(response,
-                                                               "authenticate to Anypoint as '${username}'")
+                                                               "authenticate to Anypoint as '${cred.username}'")
             if (result.url && responseHasCookie(response, "mulesoft.vaas.sess")) {
-                throw new Exception("Unable to authenticate to Anypoint as '${username}'. User requires multi-factored authentication.")
+                throw new Exception("Unable to authenticate to Anypoint as '${cred.username}'. User requires multi-factored authentication.")                                                               
             }
             logger.println 'Successfully authenticated'
-            accessToken = result.access_token
+            accessToken = result.access_token            
         }
     }
     private def responseHasCookie(CloseableHttpResponse response, String name){
         def hasCookie = response.getHeaders("Set-Cookie").any {h -> h.value.split("=")[0].equalsIgnoreCase(name)}
         hasCookie
     }
+
+    private def fetchAccessToken(ConnectedAppCredential cred) {
+        logger.println "Authenticating to Anypoint with connected app '${cred.id}'"
+        def payload = [
+                client_id: cred.id,
+                client_secret: cred.secret,
+                grant_type: "client_credentials"
+        ]
+        def request = new HttpPost("${baseUrl}/accounts/api/v2/oauth2/token").with {
+            setEntity(new StringEntity(JsonOutput.toJson(payload)))
+            addHeader('Content-Type',
+                    'application/json')
+            it
+        }
+        httpClient.execute(request).with { response ->
+            def result = assertSuccessfulResponseAndReturnJson(response,
+                    "authenticate to Anypoint with connected app '${cred.id}'")
+            logger.println 'Successfully authenticated'
+            accessToken = result.access_token
+        }
+    }
+
     static def assertSuccessfulResponse(CloseableHttpResponse response,
                                         String failureContext) {
         def status = response.statusLine.statusCode
