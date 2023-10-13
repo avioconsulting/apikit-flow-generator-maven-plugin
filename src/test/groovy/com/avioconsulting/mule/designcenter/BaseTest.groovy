@@ -1,7 +1,7 @@
 package com.avioconsulting.mule.designcenter
 
-import com.avioconsulting.mule.designcenter.api.models.credentials.ConnectedAppCredential
-import com.avioconsulting.mule.designcenter.api.models.credentials.UsernamePasswordCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.ConnectedAppCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
 import groovy.json.JsonOutput
 import io.vertx.core.Handler
 import io.vertx.core.Vertx

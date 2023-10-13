@@ -1,6 +1,6 @@
 package com.avioconsulting.mule.designcenter
 
-import com.avioconsulting.mule.designcenter.api.models.credentials.UsernamePasswordCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.test.GroovyAssert

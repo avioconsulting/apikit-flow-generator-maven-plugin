@@ -1,9 +1,9 @@
 package com.avioconsulting.mule
 
 
-import com.avioconsulting.mule.designcenter.api.models.credentials.ConnectedAppCredential
-import com.avioconsulting.mule.designcenter.api.models.credentials.Credential
-import com.avioconsulting.mule.designcenter.api.models.credentials.UsernamePasswordCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.ConnectedAppCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.Credential
+import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import org.apache.commons.io.FileUtils
