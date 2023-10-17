@@ -47,6 +47,8 @@ mvn apikit-flow-generator:generateFlowRest \
     -Dmain.raml=test-api.raml \
     -Danypoint.username= \
     -Danypoint.password= \
+    -Danypoint.connected-app.id= \
+    -Danypoint.connected-app.secret= \
     -DdesignCenter.project.name=
 ```
 _**NOTE:** Anypoint users with MFA enabled or SSO Users are not supported by this plugin._
