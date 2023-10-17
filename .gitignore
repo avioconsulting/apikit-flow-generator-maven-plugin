@@ -6,3 +6,6 @@ build
 /foobar
 /gradle.properties
 target
+.DS_Store
+apikit-flow-generator-maven-plugin.iml
+bin

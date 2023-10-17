@@ -1,5 +1,9 @@
 package com.avioconsulting.mule
 
+
+import com.avioconsulting.mule.anypoint.api.credentials.model.ConnectedAppCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.Credential
+import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import org.apache.commons.io.FileUtils
@@ -19,11 +23,17 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'api.current.version')
     private String currentApiVersion
 
-    @Parameter(property = 'anypoint.username', required = true)
+    @Parameter(property = 'anypoint.username')
     private String anypointUsername
 
-    @Parameter(property = 'anypoint.password', required = true)
+    @Parameter(property = 'anypoint.password')
     private String anypointPassword
+
+    @Parameter(property = 'anypoint.connected-app.id')
+    private String anypointConnectedAppId
+    
+    @Parameter(property = 'anypoint.connected-app.secret')
+    private String anypointConnectedAppSecret
 
     @Parameter(property = 'anypoint.organizationName')
     private String anypointOrganizationName
@@ -79,10 +89,13 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             FileUtils.copyDirectory(localRamlDirectory,
                                     apiDirectory)
         } else {
+            Credential credential = new UsernamePasswordCredential(this.anypointUsername, this.anypointPassword)
+            if(this.anypointConnectedAppId != null && this.anypointConnectedAppSecret != null) {
+                credential = new ConnectedAppCredential(this.anypointConnectedAppId, this.anypointConnectedAppSecret)
+            }
             log.info 'Will fetch RAML contents from Design Center first'
             def clientWrapper = new HttpClientWrapper('https://anypoint.mulesoft.com',
-                                                      this.anypointUsername,
-                                                      this.anypointPassword,
+                                                      credential,
                                                       this.log,
                                                       this.anypointOrganizationName)
             def designCenter = new DesignCenterDeployer(clientWrapper,
