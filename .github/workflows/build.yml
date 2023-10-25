@@ -16,7 +16,7 @@ jobs:
     uses: avioconsulting/shared-workflows/.github/workflows/maven-build.yml@main
     secrets: inherit
     with:
-      include-mule-ee-repo: true
+      include-mule-ee-repo: false 
 
   Release-Maven:
     needs: Build-Maven
