@@ -1,0 +1,80 @@
+project:
+  name: apikit-flow-generator-maven-plugin
+  description: Plugin to generate mule flows for REST or SOAP APIs
+  longDescription: |
+    This maven plugin generates mule flows for REST or SOAP APIs.
+
+  links:
+    homepage: https://github.com/avioconsulting/
+    documentation: https://avioconsulting.github.io/apikit-flow-generator-maven-plugin/
+    license: https://github.com/avioconsulting/apikit-flow-generator-maven-plugin/blob/main/LICENSE
+    contribute: https://github.com/avioconsulting/apikit-flow-generator-maven-plugin/blob/main/CONTRIBUTING.adoc
+  authors:
+    - Adam DesJardin
+    - Brady Wied
+  license: BSD 2-Clause
+  inceptionYear: "2017"
+  tags:
+    - mule
+  java:
+    groupId: com.avioconsulting.mule
+    version: 8
+
+release:
+  github:
+    owner: 'avioconsulting'
+    overwrite: true
+    draft: false
+    sign: true
+    releaseName: '{{tagName}}'
+    skipTag: false
+    milestone:
+      close: false
+    changelog:
+      skipMergeCommits: true
+      formatted: ALWAYS
+      preset: conventional-commits
+      format: '- {{commitShortHash}} {{commitTitle}}'
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+      labelers:
+        - label: 'dependencies'
+          title: 'chore(deps):'
+          order: 130
+      categories:
+        - title: '⚙️  Dependencies'
+          key: 'dependencies'
+          order: 80
+          labels:
+            - 'dependencies'
+      hide:
+        categories:
+          - 'merge'
+        contributors:
+          - 'GitHub'
+
+checksum:
+  individual: true
+
+signing:
+  active: ALWAYS
+  armored: true
+  mode: MEMORY
+
+deploy:
+  maven:
+    nexus2:
+      maven-central:
+        active: ALWAYS
+        url: https://oss.sonatype.org/service/local
+        snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots/
+        applyMavenCentralRules: true
+        closeRepository: true
+        releaseRepository: true
+        stagingRepositories:
+          - target/staging-deploy
+
+distributions:
+  apikit-flow-generator-maven-plugin:
+    artifacts:
+      - path: target/apikit-flow-generator-maven-plugin-{{projectVersion}}.jar
