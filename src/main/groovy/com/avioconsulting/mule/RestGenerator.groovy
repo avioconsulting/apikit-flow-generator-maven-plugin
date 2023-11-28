@@ -34,6 +34,7 @@ class RestGenerator implements FileUtil {
                     String apiVersion,
                     boolean useCloudHub,
                     boolean insertApiNameInListenerPath,
+					String httpListenerPathName,
                     String mavenProjectName,
                     String httpListenerConfigName,
                     String insertXmlBeforeRouter,
@@ -94,6 +95,7 @@ class RestGenerator implements FileUtil {
                            apiVersion,
                            apiBaseName,
                            insertApiNameInListenerPath,
+						   httpListenerPathName,
                            httpListenerConfigName,
                            insertXmlBeforeRouter,
                            errorHandler,
@@ -116,6 +118,7 @@ class RestGenerator implements FileUtil {
                                            String apiVersion,
                                            String apiBaseName,
                                            boolean insertApiNameInListenerPath,
+										   String httpListenerPathName,
                                            String httpListenerConfigName,
                                            String insertXmlBeforeRouter,
                                            String errorHandler,
@@ -137,6 +140,7 @@ class RestGenerator implements FileUtil {
                             apiName,
                             apiVersion,
                             insertApiNameInListenerPath,
+							httpListenerPathName,
                             httpListenerConfigName,
                             httpResponse,
                             httpErrorResponse)
@@ -259,6 +263,7 @@ class RestGenerator implements FileUtil {
                                             String apiName,
                                             String apiVersion,
                                             boolean insertApiNameInListenerPath,
+											String httpListenerPathName,
                                             String httpListenerConfigName,
                                             String httpResponse,
                                             String httpErrorResponse) {
@@ -280,9 +285,14 @@ class RestGenerator implements FileUtil {
             def apiParts = []
             if (insertApiNameInListenerPath) {
                 apiParts << apiName
+            }            
+            if(httpListenerPathName){
+            listenerPathAttribute.value = httpListenerPathName            
             }
+            else {
             apiParts += [apiVersion, '*']
             listenerPathAttribute.value = '/' + apiParts.join('/')
+            }            
             if (httpResponse) {
                 replaceResponse(listener,
                                 'response',

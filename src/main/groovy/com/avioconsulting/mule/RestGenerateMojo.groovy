@@ -59,6 +59,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Parameter(property = 'http.listener.config.name')
     private String httpListenerConfigName
+    
+    @Parameter(property = 'http.listener.path.name')
+    private String httpListenerPathName
 
     @Parameter(property = 'temp.file.of.xml.to.insert.before.router')
     private File tempFileOfXmlToInsertBeforeRouter
@@ -133,6 +136,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                                currentApiVersion,
                                useCloudHub,
                                insertApiNameInListenerPath,
+                               httpListenerPathName,
                                mavenProject.artifactId,
                                httpListenerConfigName,
                                this.tempFileOfXmlToInsertBeforeRouter?.text,
