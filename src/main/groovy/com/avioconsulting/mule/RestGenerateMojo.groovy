@@ -7,6 +7,7 @@ import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCr
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import org.apache.commons.io.FileUtils
+import org.apache.commons.lang.StringEscapeUtils
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -59,6 +60,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Parameter(property = 'http.listener.config.name')
     private String httpListenerConfigName
+    
+    @Parameter(property = 'http.listener.base.path')
+    private String httpListenerBasePath
 
     @Parameter(property = 'temp.file.of.xml.to.insert.before.router')
     private File tempFileOfXmlToInsertBeforeRouter
@@ -77,6 +81,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
+
+        httpListenerBasePath = StringEscapeUtils.unescapeJava(httpListenerBasePath)
         def apiDirectory = join(mavenProject.basedir,
                                 'src',
                                 'main',
@@ -133,6 +139,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                                currentApiVersion,
                                useCloudHub,
                                insertApiNameInListenerPath,
+                               httpListenerBasePath,
                                mavenProject.artifactId,
                                httpListenerConfigName,
                                this.tempFileOfXmlToInsertBeforeRouter?.text,

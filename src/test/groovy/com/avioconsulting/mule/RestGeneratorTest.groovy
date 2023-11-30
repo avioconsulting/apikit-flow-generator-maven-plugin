@@ -8,7 +8,7 @@ import org.junit.Before
 import org.junit.Test
 
 import static org.hamcrest.CoreMatchers.*
-import static org.junit.Assert.assertThat
+import static org.hamcrest.MatcherAssert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
 class RestGeneratorTest implements FileUtil {
@@ -82,6 +82,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                                null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -106,6 +107,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -143,6 +145,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -171,6 +174,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -202,6 +206,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -230,6 +235,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                false,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -253,6 +259,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -271,6 +278,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -298,6 +306,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -325,6 +334,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                true,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -350,6 +360,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -374,6 +385,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                                null,
                                'theProject',
                                'some-http-config',
                                null,
@@ -399,6 +411,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -414,6 +427,32 @@ class RestGeneratorTest implements FileUtil {
     }
 
     @Test
+    void httpListerBasePath() {
+        // arrange
+
+        // act
+        RestGenerator.generate(tempDir,
+                'api-stuff-v1.raml',
+                'stuff',
+                'v1',
+                false,
+                true,
+                '${http.listener.base.path}',
+                'theProject',
+                '${http.listener.config}',
+                null,
+                null,
+                null,
+                null)
+
+        // assert
+        def xmlNode = getXmlNode('api-stuff-v1.xml')
+        def listeners = xmlNode.flow[http.listener].'@path'
+        assertThat listeners,
+                is(equalTo(['${http.listener.base.path}']))
+    }
+
+    @Test
     void apiKitConfig_Parameterized() {
         // arrange
 
@@ -424,6 +463,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                                null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -456,6 +496,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                                null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -490,6 +531,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -518,6 +560,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                xmlBeforeRouter,
@@ -555,6 +598,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                null,
@@ -597,6 +641,7 @@ class RestGeneratorTest implements FileUtil {
                                'v1',
                                false,
                                true,
+                               null,
                                'theProject',
                                '${http.listener.config}',
                                xmlBeforeRouter,
