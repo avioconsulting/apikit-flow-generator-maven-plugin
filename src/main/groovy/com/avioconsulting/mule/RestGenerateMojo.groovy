@@ -8,6 +8,8 @@ import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.StringEscapeUtils
+import org.apache.maven.artifact.Artifact
+import org.apache.maven.artifact.repository.ArtifactRepository
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -15,8 +17,11 @@ import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import java.util.zip.ZipFile;
 
-@Mojo(name = 'generateFlowRest')
+@Mojo(name = 'generateFlowRest' ,
+        requiresDependencyResolution = ResolutionScope.COMPILE )
 class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'api.name')
     private String apiName
@@ -39,17 +44,26 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'anypoint.organizationName')
     private String anypointOrganizationName
 
-    @Parameter(property = 'designCenter.project.name', required = true)
+    @Parameter(property = 'designCenter.project.name')
     private String designCenterProjectName
 
     @Parameter(property = 'designCenter.branch.name', defaultValue = 'master')
     private String designCenterBranchName
 
-    @Parameter(property = 'main.raml')
+    @Parameter(property = 'main.raml' , required = true )
     private String mainRamlFileName
 
     @Parameter(property = 'local.raml.directory')
     private File localRamlDirectory
+
+    @Parameter(property = 'raml.group.id')
+    private String ramlGroupId
+
+    @Parameter(property = 'raml.artifact.id')
+    private String ramlArtifactId
+
+    @Parameter(property = 'api.spec.source')
+    private File apiSpecSource
 
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
     private boolean useCloudHub
@@ -76,6 +90,9 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'temp.file.of.xml.http.error.response')
     private File tempFileOfHttpErrorResponseXml
 
+    @Parameter( defaultValue = '${localRepository}', readonly = true, required = true )
+    private ArtifactRepository local;
+
     @Component
     protected MavenProject mavenProject
 
@@ -94,7 +111,39 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             assert localRamlDirectory.exists()
             FileUtils.copyDirectory(localRamlDirectory,
                                     apiDirectory)
-        } else {
+        } else if(ramlGroupId && ramlArtifactId){
+            log.info "Copying RAMLs from  Exchange and the Group id is ${ramlGroupId} and Artifact id is  ${ramlArtifactId}"
+
+            for( Artifact unresolvedArtifact : mavenProject.getDependencyArtifacts()) {
+
+                //Find the artifact in the local repository.
+                if(unresolvedArtifact.groupId == ramlGroupId && unresolvedArtifact.artifactId == ramlArtifactId && unresolvedArtifact.classifier =='raml' ) {
+                    Artifact art = this.local.find(unresolvedArtifact);
+                    File ramlZipFile = art.getFile();
+                    def zipFile = new java.util.zip.ZipFile(ramlZipFile)
+                    def localRepoRamlDirs = zipFile.entries()
+                    log.info 'Fetched RAML file from local repository OK, now writing to disk'
+                    // writing directories first
+                    localRepoRamlDirs.findAll { it.directory }.each {
+                        log.info "Creating Dir " + it.getName() +"..."
+                       new File(apiDirectory,
+                                it.getName()).mkdirs()
+                    }
+                    log.debug "Finished Creating Directories "
+                    // writing files next 
+                    def localRepoRamlFiles = zipFile.entries()
+                    localRepoRamlFiles.findAll { !it.directory }.each {
+                        log.info "Writing File " + it.getName() +"..."
+                        //println zipFile.getInputStream(it).text
+                        new File(apiDirectory,
+                                it.getName()).text =  zipFile.getInputStream(it).text
+                    }
+                    log.debug "Finished Writing Files "
+
+                }
+            }
+        }
+        else {
             Credential credential = new UsernamePasswordCredential(this.anypointUsername, this.anypointPassword)
             if(this.anypointConnectedAppId != null && this.anypointConnectedAppSecret != null) {
                 credential = new ConnectedAppCredential(this.anypointConnectedAppId, this.anypointConnectedAppSecret)
