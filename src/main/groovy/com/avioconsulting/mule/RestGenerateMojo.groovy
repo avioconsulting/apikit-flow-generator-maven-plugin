@@ -62,9 +62,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'raml.artifact.id')
     private String ramlArtifactId
 
-    @Parameter(property = 'api.spec.source')
-    private File apiSpecSource
-
     @Parameter(property = 'use.cloudHub', defaultValue = 'true')
     private boolean useCloudHub
 
