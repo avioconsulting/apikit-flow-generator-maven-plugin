@@ -18,15 +18,15 @@ import org.mule.tools.apikit.model.ScaffoldingConfiguration
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
     public static final Namespace http = Namespace.getNamespace('http',
-                                                                'http://www.mulesoft.org/schema/mule/http')
+            'http://www.mulesoft.org/schema/mule/http')
     public static final Namespace apiKit = Namespace.getNamespace('apikit',
-                                                                  'http://www.mulesoft.org/schema/mule/mule-apikit')
+            'http://www.mulesoft.org/schema/mule/mule-apikit')
     public static final Namespace xsi = Namespace.getNamespace('xsi',
-                                                               'http://www.w3.org/2001/XMLSchema-instance')
+            'http://www.w3.org/2001/XMLSchema-instance')
     public static final Namespace doc = Namespace.getNamespace('doc',
-                                                               'http://www.mulesoft.org/schema/mule/documentation')
+            'http://www.mulesoft.org/schema/mule/documentation')
     public static final Namespace ee = Namespace.getNamespace('ee',
-                                                              'http://www.mulesoft.org/schema/mule/ee/core')
+            'http://www.mulesoft.org/schema/mule/ee/core')
 
     static generate(File baseDirectory,
                     String ramlPath,
@@ -34,30 +34,32 @@ class RestGenerator implements FileUtil {
                     String apiVersion,
                     boolean useCloudHub,
                     boolean insertApiNameInListenerPath,
-					String httpListenerBasePath,
+                    String httpListenerBasePath,
                     String mavenProjectName,
                     String httpListenerConfigName,
                     String insertXmlBeforeRouter,
                     String errorHandler,
                     String httpResponse,
                     String httpErrorResponse) {
-        // without runtime edition EE, we won't use weaves in the output
+        // Without runtime edition EE, we won't use weaves in the output
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
+
+        // Setup directories and target XML config file
         def mainDir = join(baseDirectory,
-                           'src',
-                           'main')
-        def ramlFile = join(mainDir,
-                            'resources',
-                            'api',
-                            ramlPath)
-        assert ramlFile.exists()
+                'src',
+                'main')
         def appDirectory = join(mainDir,
-                                'mule')
+                'mule')
+        def ramlFile = join(mainDir,
+                'resources',
+                'api',
+                ramlPath)
+        assert ramlFile.exists()
         def baseName = FileUtils.basename(ramlPath,
-                                          '.raml')
+                '.raml')
         def flowFileName = baseName + '.xml'
         def flowFile = join(appDirectory,
-                            flowFileName)
+                flowFileName)
         if (flowFile.exists()) {
             // utility works best with a clean file
             if (!flowFile.delete()) {
@@ -67,40 +69,44 @@ class RestGenerator implements FileUtil {
                 assert flowFile.delete()
             }
         }
-        // generates the flow
+
+        // Generate the flows
         def parseResult = new RamlParsingStrategy().parse(ApiReference.create(ramlFile.absolutePath))
         assert parseResult.errors == []
         def result = scaffolder.run(ScaffoldingConfiguration.builder()
-                                            .withApi(parseResult.get())
-                                            .withMuleConfigurations([])
-                                            .build())
+                .withApi(parseResult.get())
+                .withMuleConfigurations([])
+                .build())
         assert result.errors == []
         assert result.generatedConfigs.size() > 0
         result.generatedConfigs.each { config ->
             new File(appDirectory,
-                     config.name).text = config.content.text
+                    config.name).text = config.content.text
         }
+
         if (useCloudHub) {
             adjustRamlBaseUri(ramlFile,
-                              apiName,
-                              mavenProjectName)
+                    apiName,
+                    mavenProjectName)
         }
+
         def flowPath = new File(appDirectory,
-                                flowFileName)
+                flowFileName)
         assert flowPath.exists()
+
         // Mule's generator will use the RAML filename by convention
         def apiBaseName = FilenameUtils.getBaseName(ramlPath)
         alterGeneratedFlow(flowPath,
-                           apiName,
-                           apiVersion,
-                           apiBaseName,
-                           insertApiNameInListenerPath,
-						   httpListenerBasePath,
-                           httpListenerConfigName,
-                           insertXmlBeforeRouter,
-                           errorHandler,
-                           httpResponse,
-                           httpErrorResponse)
+                apiName,
+                apiVersion,
+                apiBaseName,
+                insertApiNameInListenerPath,
+                httpListenerBasePath,
+                httpListenerConfigName,
+                insertXmlBeforeRouter,
+                errorHandler,
+                httpResponse,
+                httpErrorResponse)
     }
 
     private static void adjustRamlBaseUri(File ramlFile,
@@ -109,7 +115,7 @@ class RestGenerator implements FileUtil {
         def ramlText = ramlFile.text
         def baseUri = "https://${mavenProjectName}.cloudhub.io/${apiName}/{version}"
         def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
-                                            "baseUri: ${baseUri}")
+                "baseUri: ${baseUri}")
         ramlFile.write fixedRaml
     }
 
@@ -118,7 +124,7 @@ class RestGenerator implements FileUtil {
                                            String apiVersion,
                                            String apiBaseName,
                                            boolean insertApiNameInListenerPath,
-										   String httpListenerBasePath,
+                                           String httpListenerBasePath,
                                            String httpListenerConfigName,
                                            String insertXmlBeforeRouter,
                                            String errorHandler,
@@ -128,43 +134,43 @@ class RestGenerator implements FileUtil {
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
         def schemaLocation = rootElement.getAttribute('schemaLocation',
-                                                      xsi)
+                xsi)
         // for some reason, the EE schema location is not being included automatically, even when the DWs
         // are generated code from the scaffolder
         // 9-27-22: Removing this after apikit version updates.  EE namespaces were being duplicated.
         // schemaLocation.value = schemaLocation.value + ee.URI + ' ' + 'http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd'
         removeHttpListenerConfigs(rootElement)
         removeConsole(rootElement,
-                      apiBaseName)
+                apiBaseName)
         modifyHttpListeners(rootElement,
-                            apiName,
-                            apiVersion,
-                            insertApiNameInListenerPath,
-							httpListenerBasePath,
-                            httpListenerConfigName,
-                            httpResponse,
-                            httpErrorResponse)
+                apiName,
+                apiVersion,
+                insertApiNameInListenerPath,
+                httpListenerBasePath,
+                httpListenerConfigName,
+                httpResponse,
+                httpErrorResponse)
         parameterizeApiKitConfig(rootElement)
         def mainFlow = getMainFlow(rootElement,
-                                   apiBaseName)
+                apiBaseName)
         if (insertXmlBeforeRouter) {
             doInsertXmlBeforeRouter(mainFlow,
-                                    insertXmlBeforeRouter)
+                    insertXmlBeforeRouter)
         }
         if (errorHandler) {
             replaceErrorHandler(mainFlow,
-                                errorHandler)
+                    errorHandler)
         }
         def outputter = new XMLOutputter(Format.prettyFormat)
         outputter.output(document,
-                         new FileWriter(flowPath))
+                new FileWriter(flowPath))
     }
 
     private static Element getMainFlow(Element rootElement,
                                        String apiBaseName) {
         def lookFor = "${apiBaseName}-main"
         Element mainFlow = rootElement.getChildren('flow',
-                                                   core).find { element ->
+                core).find { element ->
             element.getAttribute('name').value == lookFor
         }
         assert mainFlow: "Was looking for flow ${lookFor}"
@@ -174,7 +180,7 @@ class RestGenerator implements FileUtil {
     private static void doInsertXmlBeforeRouter(Element mainFlow,
                                                 String insertXmlBeforeRouter) {
         def router = mainFlow.getChild('router',
-                                       Namespace.getNamespace('http://www.mulesoft.org/schema/mule/mule-apikit'))
+                Namespace.getNamespace('http://www.mulesoft.org/schema/mule/mule-apikit'))
         assert router
         def routerIndex = mainFlow.indexOf(router)
         def builder = new SAXBuilder()
@@ -182,13 +188,13 @@ class RestGenerator implements FileUtil {
         // we're "moving" the element from 1 doc to another so have to detach it
         def elementToInsert = newXmlDocument.detachRootElement()
         mainFlow.addContent(routerIndex,
-                            elementToInsert)
+                elementToInsert)
     }
 
     private static void replaceErrorHandler(Element mainFlow,
                                             String errorHandlerXml) {
         def existingErrorHandler = mainFlow.getChild('error-handler',
-                                                     core)
+                core)
         assert existingErrorHandler
         mainFlow.removeContent(existingErrorHandler)
         def builder = new SAXBuilder()
@@ -201,10 +207,10 @@ class RestGenerator implements FileUtil {
     private static void removeConsole(Element rootElement,
                                       String apiBaseName) {
         allowDetailedValidationInfo(rootElement,
-                                    apiBaseName)
+                apiBaseName)
         def lookFor = "${apiBaseName}-console"
         def consoleFlow = rootElement.getChildren('flow',
-                                                  core).find { element ->
+                core).find { element ->
             element.getAttribute('name').value == lookFor
         }
         assert consoleFlow: "Was looking for flow ${lookFor}"
@@ -215,26 +221,26 @@ class RestGenerator implements FileUtil {
                                                     String apiBaseName) {
         def lookFor = "${apiBaseName}-main"
         def routerFlow = rootElement.getChildren('flow',
-                                                 core).find { element ->
+                core).find { element ->
             element.getAttribute('name').value == lookFor
         }
         assert routerFlow: "Was looking for flow ${lookFor}"
         def errorHandler = routerFlow.getChild('error-handler',
-                                               core)
+                core)
         assert errorHandler
         def badRequestHandler = errorHandler.getChildren('on-error-propagate',
-                                                         core).find { element ->
+                core).find { element ->
             element.getAttribute('type').value == 'APIKIT:BAD_REQUEST'
         }
         assert badRequestHandler
         def badRequestWeave = badRequestHandler.getChild('transform',
-                                                         ee)
+                ee)
         assert badRequestWeave
         def message = badRequestWeave.getChild('message',
-                                               ee)
+                ee)
         assert message
         def setPayload = message.getChild('set-payload',
-                                          ee)
+                ee)
         assert setPayload
         def dwLines = [
                 '%dw 2.0',
@@ -247,31 +253,31 @@ class RestGenerator implements FileUtil {
 
     private static boolean removeHttpListenerConfigs(Element rootElement) {
         rootElement.removeChildren('listener-config',
-                                   http)
+                http)
     }
 
     private static void parameterizeApiKitConfig(Element flowNode) {
         def apiKitConfig = flowNode.getChild('config',
-                                             apiKit)
+                apiKit)
         assert apiKitConfig
         // allow projects to control this via properties
         apiKitConfig.setAttribute('disableValidations',
-                                  '${skip.apikit.validation}')
+                '${skip.apikit.validation}')
     }
 
     private static void modifyHttpListeners(Element flowNode,
                                             String apiName,
                                             String apiVersion,
                                             boolean insertApiNameInListenerPath,
-											String httpListenerBasePath,
+                                            String httpListenerBasePath,
                                             String httpListenerConfigName,
                                             String httpResponse,
                                             String httpErrorResponse) {
         def listeners = flowNode.getChildren('flow',
-                                             core)
+                core)
                 .collect { flow ->
                     flow.getChildren('listener',
-                                     http)
+                            http)
                 }.flatten()
         listeners.each { Element listener ->
             // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
@@ -285,23 +291,22 @@ class RestGenerator implements FileUtil {
             def apiParts = []
             if (insertApiNameInListenerPath) {
                 apiParts << apiName
-            }            
-            if(httpListenerBasePath){
-            listenerPathAttribute.value = httpListenerBasePath
             }
-            else {
-            apiParts += [apiVersion, '*']
-            listenerPathAttribute.value = '/' + apiParts.join('/')
-            }            
+            if (httpListenerBasePath) {
+                listenerPathAttribute.value = httpListenerBasePath
+            } else {
+                apiParts += [apiVersion, '*']
+                listenerPathAttribute.value = '/' + apiParts.join('/')
+            }
             if (httpResponse) {
                 replaceResponse(listener,
-                                'response',
-                                httpResponse)
+                        'response',
+                        httpResponse)
             }
             if (httpErrorResponse) {
                 replaceResponse(listener,
-                                'error-response',
-                                httpErrorResponse)
+                        'error-response',
+                        httpErrorResponse)
             }
         }
     }
@@ -310,7 +315,7 @@ class RestGenerator implements FileUtil {
                                         String responseType,
                                         String newResponse) {
         def existingResponse = listener.getChild(responseType,
-                                                 http)
+                http)
         listener.removeContent(existingResponse)
         def builder = new SAXBuilder()
         def newXmlDocument = builder.build(new StringReader(newResponse))
