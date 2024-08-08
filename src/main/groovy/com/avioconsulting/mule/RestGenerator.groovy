@@ -28,7 +28,8 @@ class RestGenerator implements FileUtil {
     public static final Namespace ee = Namespace.getNamespace('ee',
             'http://www.mulesoft.org/schema/mule/ee/core')
 
-    static generate(File baseDirectory,
+    static generate(File tempDirectory,
+                    File baseDirectory,
                     String ramlPath,
                     String apiName,
                     String apiVersion,
@@ -45,20 +46,36 @@ class RestGenerator implements FileUtil {
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
 
         // Setup directories and target XML config file
+        def tmpMainDir = join(tempDirectory,
+                'src',
+                'main')
+        tmpMainDir.mkdirs()
+        def tmpAppDirectory = join(tmpMainDir,
+                'mule')
+        tmpAppDirectory.mkdirs()
+
+
+        // Setup directories and target XML config file
         def mainDir = join(baseDirectory,
                 'src',
                 'main')
+        mainDir.mkdirs()
         def appDirectory = join(mainDir,
                 'mule')
-        def ramlFile = join(mainDir,
+        appDirectory.mkdirs()
+
+        // Validate RAML Path
+        def ramlFile = join(tmpMainDir,
                 'resources',
                 'api',
                 ramlPath)
         assert ramlFile.exists()
+
+        // Remove Existing main flow file if exists
         def baseName = FileUtils.basename(ramlPath,
                 '.raml')
         def flowFileName = baseName + '.xml'
-        def flowFile = join(appDirectory,
+        def flowFile = join(tmpAppDirectory,
                 flowFileName)
         if (flowFile.exists()) {
             // utility works best with a clean file
@@ -84,15 +101,16 @@ class RestGenerator implements FileUtil {
                     config.name).text = config.content.text
         }
 
+        def flowPath = new File(appDirectory,
+                flowFileName)
+        assert flowPath.exists()
+
+
         if (useCloudHub) {
             adjustRamlBaseUri(ramlFile,
                     apiName,
                     mavenProjectName)
         }
-
-        def flowPath = new File(appDirectory,
-                flowFileName)
-        assert flowPath.exists()
 
         // Mule's generator will use the RAML filename by convention
         def apiBaseName = FilenameUtils.getBaseName(ramlPath)

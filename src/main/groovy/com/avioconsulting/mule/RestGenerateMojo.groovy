@@ -6,9 +6,9 @@ import com.avioconsulting.mule.anypoint.api.credentials.model.Credential
 import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
+import groovy.json.JsonSlurper
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.StringEscapeUtils
-import org.apache.maven.artifact.Artifact
 import org.apache.maven.artifact.repository.ArtifactRepository
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
@@ -95,7 +95,23 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
-        def apiDirectory = join(mavenProject.basedir,
+
+        File tmpProject = File.createTempDir()
+        File mvnProject = mavenProject.basedir
+        FileUtils.copyDirectory(mvnProject, tmpProject)
+        println "Creating temp project: ${tmpProject.getAbsolutePath()}"
+
+        println "repo: " + local.url
+                def localRepo = new File(local.url)
+        println "repo file: " + localRepo.absolutePath
+        def userHome = new File(System.getProperty('user.home'))
+        def mvnHome = new File(userHome, '.m2')
+        def mvnRepo = new File(mvnHome, 'repository')
+        def ramlVersion = 	"1.1.6"
+
+
+
+        def apiDirectory = join(tmpProject,
                 'src',
                 'main',
                 'resources',
@@ -111,36 +127,10 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
         // Using RAML from Exchange
         } else if (ramlGroupId && ramlArtifactId) {
-            log.info "Copying RAMLs from Exchange dependency with Group ID ${ramlGroupId} and Artifact ID ${ramlArtifactId}"
-
-            for (Artifact unresolvedArtifact : mavenProject.getDependencyArtifacts()) {
-
-                //Find the artifact in the local repository.
-                if (unresolvedArtifact.groupId == ramlGroupId && unresolvedArtifact.artifactId == ramlArtifactId && unresolvedArtifact.classifier == 'raml') {
-                    Artifact art = this.local.find(unresolvedArtifact)
-                    File ramlZipFile = art.getFile()
-                    def zipFile = new ZipFile(ramlZipFile)
-                    def localRepoRamlDirs = zipFile.entries()
-                    log.info 'Fetched RAML file from local repository OK, now writing to disk'
-                    // writing directories first
-                    localRepoRamlDirs.findAll { it.directory }.each {
-                        log.info "Creating Dir " + it.getName() + "..."
-                        new File(apiDirectory,
-                                it.name).mkdirs()
-                    }
-                    log.debug "Finished Creating Directories "
-                    // writing files next 
-                    def localRepoRamlFiles = zipFile.entries()
-                    localRepoRamlFiles.findAll { !it.directory }.each {
-                        log.info "Writing File " + it.getName() + "..."
-                        //println zipFile.getInputStream(it).text
-                        new File(apiDirectory,
-                                it.getName()).text = zipFile.getInputStream(it).text
-                    }
-                    log.debug "Finished Writing Files "
-
-                }
-            }
+            File raml = getArtifact(mvnRepo, ramlGroupId, ramlArtifactId, ramlVersion)
+            expandArtifact(raml, apiDirectory)
+            mainRamlFileName = getMainRaml(apiDirectory)
+            processDeps(apiDirectory, mvnRepo)
         // Using RAML from a Design Center project
         } else {
             Credential credential = new UsernamePasswordCredential(this.anypointUsername, this.anypointPassword)
@@ -172,7 +162,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         }
 
         // Use first RAML file in the root directory as the main one if a specific one is not provided
-        if (!mainRamlFileName) {
+        if (!mainRamlFileName || mainRamlFileName == 'NotUsed') {
             def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
                     '*.raml')
             // we don't want the full path
@@ -190,7 +180,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         // Unescape listener base path to support passing property references as part of the path ${}
         httpListenerBasePath = StringEscapeUtils.unescapeJava(httpListenerBasePath)
 
-        RestGenerator.generate(mavenProject.basedir,
+        RestGenerator.generate(tmpProject,
+                mavenProject.basedir,
                 mainRamlFileName,
                 apiName,
                 currentApiVersion,
@@ -203,5 +194,63 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                 this.tempFileErrorHandlerXml?.text,
                 this.tempFileOfHttpResponseXml?.text,
                 this.tempFileOfHttpErrorResponseXml?.text)
+    }
+
+    // New code
+
+    static def getMainRaml(File ramlDirectory) {
+        def js = new JsonSlurper()
+        return js.parse(new File(ramlDirectory, 'exchange.json')).main
+    }
+
+    static def processDeps(File ramlDirectory, File mvnRepo) {
+        // Get Exchange Info
+        def exchangeInfo = getExchangeInfo(ramlDirectory)
+
+        // If Has deps
+        if(exchangeInfo.dependencies.size() > 0) {
+            def modulesDir = new File(ramlDirectory, 'exchange_modules')
+            modulesDir.mkdirs()
+            exchangeInfo.dependencies.each { dep ->
+                def artifact = getArtifact(mvnRepo, dep.groupId, dep.assetId, dep.version)
+                def targetDir = new File(modulesDir, dep.groupId + File.separator + dep.assetId + File.separator + dep.version)
+                targetDir.mkdirs()
+                expandArtifact(artifact, targetDir)
+            }
+        }
+    }
+
+
+    static def getExchangeInfo(File ramlDirectory) {
+        def js = new JsonSlurper()
+        return js.parse(new File(ramlDirectory, 'exchange.json'))
+    }
+
+    static File getArtifact(File mvnRepo, String groupId, String artifactId, String version) {
+        File artifactDir = new File(mvnRepo, groupId.replaceAll('\\.', File.separator) + File.separator + artifactId + File.separator + version)
+        println artifactDir.absolutePath
+
+        if (artifactDir.exists() && artifactDir.isDirectory()) {
+            File artifactFile  = artifactDir.listFiles().find {
+                it.name.endsWith('.zip')
+            }
+            return artifactFile
+        } else {
+            return null
+        }
+    }
+
+    static def expandArtifact(File artifact, File target) {
+        ZipFile zipFile = new ZipFile(artifact)
+
+        zipFile.entries().findAll { it.directory }.each {
+            println "Creating Dir " + it.name + "..."
+            new File(target, it.name).mkdirs()
+        }
+
+        zipFile.entries().findAll { !it.directory }.each {
+            println "Writing File " + it.name + "..."
+            new File(target, it.name).text = zipFile.getInputStream(it).text
+        }
     }
 }
