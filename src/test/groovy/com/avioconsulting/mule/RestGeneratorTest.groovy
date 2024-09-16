@@ -4,6 +4,7 @@ import groovy.xml.Namespace
 import groovy.xml.QName
 import groovy.xml.XmlParser
 import org.apache.commons.io.FileUtils
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
@@ -12,7 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
 class RestGeneratorTest implements FileUtil {
-    private File tempDir, appDir, mainDir, apiDir
+    private File projectDir, appDir, mainDir, apiDir, tmpProject, tmpApiDir
     private static Namespace http = new Namespace(RestGenerator.http.URI)
     public static final Namespace apiKit = new Namespace(RestGenerator.apiKit.URI)
     public static final Namespace doc = new Namespace(RestGenerator.doc.URI)
@@ -21,14 +22,9 @@ class RestGeneratorTest implements FileUtil {
 
     @Before
     void setup() {
-        tempDir = join new File('build'),
-                       'tmp',
-                       'test'
-        if (tempDir.exists()) {
-            tempDir.deleteDir()
-        }
-        tempDir.mkdirs()
-        mainDir = join tempDir,
+        tmpProject = File.createTempDir()
+        projectDir = File.createTempDir()
+        mainDir = join projectDir,
                        'src',
                        'main'
         mainDir.mkdirs()
@@ -39,6 +35,7 @@ class RestGeneratorTest implements FileUtil {
                       'resources',
                       'api'
         apiDir.mkdirs()
+        tmpApiDir = join tmpProject, 'src', 'main', 'resources', 'api'
         def testResources = join new File('src'),
                                  'test',
                                  'resources'
@@ -60,7 +57,8 @@ class RestGeneratorTest implements FileUtil {
         // scaffolder won't run without this
         FileUtils.copyFileToDirectory(join(testResources,
                                            'mule-artifact.json'),
-                                      tempDir)
+                                      projectDir)
+        FileUtils.copyDirectory(projectDir, tmpProject)
     }
 
     Node getXmlNode(String xmlPath) {
@@ -71,12 +69,19 @@ class RestGeneratorTest implements FileUtil {
                       true).parse(xmlFile)
     }
 
+    @After
+    void teardown() {
+        projectDir.deleteDir()
+        tmpProject.deleteDir()
+    }
+
     @Test
     void generates_Flow() {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -101,7 +106,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -139,7 +145,8 @@ class RestGeneratorTest implements FileUtil {
 <response xmlns="http://www.mulesoft.org/schema/mule/http" statusCode="400"/>
 """
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -168,7 +175,8 @@ class RestGeneratorTest implements FileUtil {
 <error-response xmlns="http://www.mulesoft.org/schema/mule/http" statusCode="400"/>
 """
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -200,7 +208,8 @@ class RestGeneratorTest implements FileUtil {
 <error-response xmlns="http://www.mulesoft.org/schema/mule/http" statusCode="402"/>
 """
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -229,7 +238,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -253,7 +263,8 @@ class RestGeneratorTest implements FileUtil {
     @Test
     void regenerates_Flow() {
         // arrange
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -272,7 +283,8 @@ class RestGeneratorTest implements FileUtil {
         def existingFlowXmlContents = flowXmlFile.text
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -300,7 +312,8 @@ class RestGeneratorTest implements FileUtil {
         def origRamlText = ramlFile.text
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                raml,
                                'stuff',
                                'v1',
@@ -323,12 +336,12 @@ class RestGeneratorTest implements FileUtil {
     void fixes_Raml_Yes() {
         // arrange
         def raml = 'api-stuff-v1.raml'
-        def ramlFile = join(apiDir,
+        def ramlFile = join(tmpApiDir,
                             raml)
         def origRamlText = ramlFile.text
-
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                raml,
                                'stuff',
                                'v1',
@@ -354,7 +367,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -379,7 +393,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -405,7 +420,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -431,7 +447,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                projectDir,
                 'api-stuff-v1.raml',
                 'stuff',
                 'v1',
@@ -456,8 +473,10 @@ class RestGeneratorTest implements FileUtil {
     void apiKitConfig_Parameterized() {
         // arrange
 
+
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -490,7 +509,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -525,7 +545,8 @@ class RestGeneratorTest implements FileUtil {
         // arrange
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -554,7 +575,8 @@ class RestGeneratorTest implements FileUtil {
 <logger xmlns="http://some/namespace" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://some/namespace http://some/namespace.xsd"/>"""
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -592,7 +614,8 @@ class RestGeneratorTest implements FileUtil {
 """
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
@@ -635,7 +658,8 @@ class RestGeneratorTest implements FileUtil {
 """
 
         // act
-        RestGenerator.generate(tempDir,
+        RestGenerator.generate(tmpProject,
+                                projectDir,
                                'api-stuff-v1.raml',
                                'stuff',
                                'v1',
