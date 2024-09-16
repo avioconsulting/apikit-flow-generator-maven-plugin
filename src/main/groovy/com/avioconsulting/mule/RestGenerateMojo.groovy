@@ -223,7 +223,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     def replaceNewlinesRecursively(path) {
         Files.walk(Paths.get(path)).forEach { filePath ->
-            if (Files.isRegularFile(filePath)) {
+            if(!Files.isDirectory(filePath) && !isBinary(filePath)){
                 def content = new String(Files.readAllBytes(filePath))
                 content = content.replaceAll("\r\n", "\n")
                 Files.write(filePath, content.getBytes())
