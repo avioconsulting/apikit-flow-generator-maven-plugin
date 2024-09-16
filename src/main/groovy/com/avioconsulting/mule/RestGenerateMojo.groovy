@@ -99,13 +99,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
         File projectDir = mavenProject.basedir
         File tmpProject = File.createTempDir()
+        tmpProject.deleteOnExit()
         log.info "Created temp project: ${tmpProject.getAbsolutePath()}"
-
-
-//        def userHome = new File(System.getProperty('user.home'))
-//        def mvnHome = new File(userHome, '.m2')
-//        def mvnRepo = new File(mvnHome, 'repository')
-
 
         def apiDirectory = join(projectDir,
                 'src',
