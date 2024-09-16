@@ -40,6 +40,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'anypointConnectedAppId')
     private String anypointConnectedAppId
 
+
     @Parameter(property = 'anypointConnectedAppSecret')
     private String anypointConnectedAppSecret
 
@@ -94,8 +95,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
-
-
 
         File projectDir = mavenProject.basedir
         File tmpProject = File.createTempDir()
@@ -163,8 +162,10 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                     this.anypointOrganizationName)
             def designCenter = new DesignCenterDeployer(clientWrapper,
                     log)
+          
             def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(ramlDcProject,
                     ramlDcBranch)
+
             log.info 'Fetched RAML files OK, now writing to disk'
             // need our directories first
             def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
@@ -183,6 +184,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
         // Use first RAML file in the root directory as the main one if a specific one is not provided
         if (!ramlFilename || ramlFilename == 'NotUsed') {
+
             def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
                     '*.raml')
             // we don't want the full path
@@ -214,6 +216,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                 this.tempFileErrorHandlerXml?.text,
                 this.tempFileOfHttpResponseXml?.text,
                 this.tempFileOfHttpErrorResponseXml?.text)
+      
         replaceNewlinesRecursively(mavenProject.basedir.toURI())
     }
 

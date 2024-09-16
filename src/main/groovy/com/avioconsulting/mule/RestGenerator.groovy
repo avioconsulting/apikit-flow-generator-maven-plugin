@@ -105,7 +105,6 @@ class RestGenerator implements FileUtil {
                 flowFileName)
         assert flowPath.exists()
 
-
         if (useCloudHub) {
             adjustRamlBaseUri(ramlFile,
                     apiName,
