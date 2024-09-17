@@ -8,12 +8,14 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
+import java.nio.file.Paths
+
 import static org.hamcrest.CoreMatchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 @SuppressWarnings("GroovyAssignabilityCheck")
 class RestGeneratorTest implements FileUtil {
-    private File projectDir, appDir, mainDir, apiDir, tmpProject, tmpApiDir
+    private File projectDir, appDir, mainDir, apiDir, tmpProject, tmpApiDir, resourceDir, keystoreDir
     private static Namespace http = new Namespace(RestGenerator.http.URI)
     public static final Namespace apiKit = new Namespace(RestGenerator.apiKit.URI)
     public static final Namespace doc = new Namespace(RestGenerator.doc.URI)
@@ -31,8 +33,25 @@ class RestGeneratorTest implements FileUtil {
         appDir = join mainDir,
                       'mule'
         appDir.mkdirs()
-        apiDir = join mainDir,
-                      'resources',
+
+        resourceDir = join mainDir, 'resources'
+        resourceDir.mkdirs()
+
+        /* add keystore */
+        keystoreDir = join resourceDir, 'keystores'
+        keystoreDir.mkdirs()
+
+        def testKeystoreRes = join new File('src'),
+                'test',
+                'resources',
+                'keystores'
+
+        ['listener_keystore_local.jks'].each { filename ->
+            def keyFile = join testKeystoreRes, filename
+            FileUtils.copyFileToDirectory(keyFile, keystoreDir)
+        }
+
+        apiDir = join resourceDir,
                       'api'
         apiDir.mkdirs()
         tmpApiDir = join tmpProject, 'src', 'main', 'resources', 'api'
@@ -495,7 +514,7 @@ class RestGeneratorTest implements FileUtil {
         def apiKitConfig = xmlNode[apiKit.'config'][0]
         assert apiKitConfig
         assertThat apiKitConfig.'@disableValidations',
-                   is(equalTo('${skip.apikit.validation}'))
+                   is(equalTo('${api.validation}'))
     }
 
     def getChildNodeNames(Node node) {
@@ -691,5 +710,17 @@ class RestGeneratorTest implements FileUtil {
         assert errorHandlerNode
         assertThat errorHandlerNode.'@ref',
                    is(equalTo('howdy'))
+    }
+
+    @Test
+    void jks_is_binary() {
+        def keystore = Paths.get(keystoreDir.absolutePath, 'listener_keystore_local.jks')
+        assert !isText(keystore)
+    }
+
+    @Test
+    void raml_is_not_binary() {
+        def raml = Paths.get(apiDir.absolutePath, 'ref_type.raml')
+        assert isText(raml)
     }
 }
