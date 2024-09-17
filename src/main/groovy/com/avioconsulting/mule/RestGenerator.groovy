@@ -8,9 +8,6 @@ import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import groovy.json.JsonSlurper
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
-import org.apache.maven.model.Dependency
-import org.apache.maven.plugin.MojoFailureException
-import org.apache.maven.project.MavenProject
 import org.jdom2.CDATA
 import org.jdom2.Element
 import org.jdom2.Namespace
@@ -70,12 +67,7 @@ class RestGenerator implements FileUtil {
                                   boolean insertApiNameInListenerPath,
                                   File ramlDirectory,
                                   String ramlFilename) {
-        // Using local, we will determine RAML Path (assuming we need it)
-        // ramlDirectory and ramlFilename are the required properties
-
         // Copy local raml into project
-
-        // TODO: Need logger
         def apiDirectory = join(projectDirectory,
                 'src',
                 'main',
@@ -90,6 +82,8 @@ class RestGenerator implements FileUtil {
         File tmpDirectory = this.setupTempProject(projectDirectory)
 
         // Do the work
+
+        // TODO : WORK
 
         // Copy temp project files back to real project
         this.finalizeProject(tmpDirectory, projectDirectory)
@@ -153,31 +147,29 @@ class RestGenerator implements FileUtil {
                 credential,
                 this.log,
                 anypointOrganizationName)
-        def designCenter = new DesignCenterDeployer(clientWrapper,
-                log)
-
-        def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(ramlDcProject,
-                ramlDcBranch)
+        def dcClient = new DesignCenterDeployer(clientWrapper, log)
+        def dcProjectFiles = dcClient.getExistingDesignCenterFilesByProjectName(ramlDcProject, ramlDcBranch)
 
         log.info 'Fetched RAML files OK, now writing to disk'
-        // need our directories first
-        def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
-        folders.each { folder ->
-            new File(apiDirectory,
-                    folder.fileName).mkdirs()
-        }
-        def noDirs = existingRamlFiles - folders
-        noDirs.each { f ->
-            log.info "Writing file ${f.fileName}..."
-            new File(apiDirectory,
-                    f.fileName).text = f.contents
+
+        // Find directories to create locally
+        def directories = dcProjectFiles.findAll { f -> f.type == 'FOLDER' }
+        directories.each { folder ->
+            new File(apiDirectory, folder.fileName).mkdirs()
         }
 
+        // Find all files (non directories) to write
+        def notDirectories = dcProjectFiles - directories
+        notDirectories.each { f ->
+            log.info "Writing file ${f.fileName}..."
+            new File(apiDirectory, f.fileName).text = f.contents
+        }
 
         // Create temp project
         File tmpDirectory = this.setupTempProject(projectDirectory)
         // Do the work
 
+        // TODO: WORK
 
         // Copy temp project files back to real project
         this.finalizeProject(tmpDirectory, projectDirectory)
@@ -202,18 +194,21 @@ class RestGenerator implements FileUtil {
                 'resources',
                 'api')
         tmpApiDirectory.mkdirs()
+
         // Find and expand RAML dependencies into temp project
-
-        log.info "Using local m2 repository: " + localRepository
-
-        // Find and expand RAML dependencies into tmp project for scaffolding
+        log.info "Using local repository: " + localRepository
         File raml = getArtifact(localRepository, ramlGroupId, ramlArtifactId, ramlVersion)
         expandArtifact(raml, tmpApiDirectory)
         processDeps(tmpApiDirectory, localRepository)
 
-        def ramlFilename = getMainRaml(tmpApiDirectory)
+        String ramlFilename = getMainRaml(tmpApiDirectory)
         // do the work
+        this.generate(tmpDirectory, apiName, apiVersion, ramlFilename, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath)
+        // TODO: Update APIkit router w/ exchange URL to RAML
+        // def referenceString = 'resource::' + ramlGroupId + ':' + ramlArtifactId + ':' + ramlVersion + ':raml:zip:' + artifactId + '.raml'
+
         // Copy only relevant temp project files back to real project
+        this.finalizeProject(tmpDirectory, projectDirectory)
     }
 
     public File setupTempProject(File projectDirectory) {
@@ -232,9 +227,14 @@ class RestGenerator implements FileUtil {
         return tmpDirectory
     }
 
+    public void finalizeProject(File tempDirectory, File projectDirectory) {
+        // copy all but src/main/resources/api
+    }
+
     public void generate(File projectDirectory,
                          String apiName,
                          String apiVersion,
+                         String ramlFilename,
                          String httpListenerBasePath,
                          String httpListenerPath,
                          boolean insertApiNameInListenerPath) {
@@ -243,13 +243,12 @@ class RestGenerator implements FileUtil {
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
 
         // Generate the flows
-        // TODO: KK - Need ramlFile, can we infer:
         def ramlFile = join(projectDirectory,
                 'src',
                 'main',
                 'resources',
                 'api',
-                apiName + '.raml')
+                ramlFilename)
         assert ramlFile.exists()
 
         // Scaffold the RAML
@@ -263,28 +262,24 @@ class RestGenerator implements FileUtil {
         assert result.generatedConfigs.size() > 0
 
         // Write out configuration file(s) in src/main/mule
-        // TODO: KK - Need appDirectory, can we infer:
         def appDirectory = join(projectDirectory,
                 'src',
                 'main',
                 'mule')
-        assert appDirectory.exists()
+        appDirectory.mkdirs()
 
         result.generatedConfigs.each { config ->
-            new File(appDirectory,
-                    config.name).text = config.content.text
+            new File(appDirectory, config.name).text = config.content.text
         }
 
-        def flowPath = new File(appDirectory,
-                apiName + '.xml')
-        assert flowPath.exists()
-
         // Mule's generator will use the RAML filename by convention
-        // TODO: KK - can we not just infer the apiBaseName in alterGeneratedFlow from apiName?
-//        def apiBaseName = FilenameUtils.getBaseName(ramlPath)
+        def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
+
+        def mainMuleConfig = new File(appDirectory, apiBaseName + '.xml')
+        assert mainMuleConfig.exists()
 
         // Make updates to the generated base flow
-        alterGeneratedFlow(flowPath,
+        alterGeneratedFlow(mainMuleConfig,
                 apiName,
                 apiVersion,
                 insertApiNameInListenerPath,
@@ -292,11 +287,6 @@ class RestGenerator implements FileUtil {
                 httpListenerPath)
 
     }
-
-    public void finalizeProject(File tempDirectory, File projectDirectory) {
-        // copy all but src/main/resources/api
-    }
-
 
     static generate(File tempDirectory,
                     File baseDirectory,
@@ -423,10 +413,8 @@ class RestGenerator implements FileUtil {
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
 
-
         removeHttpListenerConfigs(rootElement)
-        removeConsole(rootElement,
-                apiName)
+        removeConsole(rootElement, apiName)
 
         modifyHttpListeners(rootElement,
                 'cloudhub-https-listener', // TODO: httpConfigName - Did we decide if we are going to allow to change this?
@@ -439,22 +427,10 @@ class RestGenerator implements FileUtil {
         // Adds api.validation parameter
         parameterizeApiKitConfig(rootElement)
 
-        // TODO: We are no longer allowing for customization
-//        def mainFlow = getMainFlow(rootElement,
-//                apiName)
-//        if (insertXmlBeforeRouter) {
-//            doInsertXmlBeforeRouter(mainFlow,
-//                    insertXmlBeforeRouter)
-//        }
-//        if (errorHandler) {
-//            replaceErrorHandler(mainFlow,
-//                    errorHandler)
-//        }
-
         // Format XML
+        // TODO: return the content, move this code to 'generate'
         def outputter = new XMLOutputter(Format.prettyFormat)
-        outputter.output(document,
-                new FileWriter(flowPath))
+        outputter.output(document, new FileWriter(flowPath))
     }
 
     // TODO: Remove when done...
@@ -679,8 +655,8 @@ class RestGenerator implements FileUtil {
         listener.addContent(elementToInsert)
     }
 
-    File getArtifact(File mvnRepo, String groupId, String artifactId, String version) {
-        File artifactDir = new File(mvnRepo, groupId + File.separator + artifactId + File.separator + version)
+    File getArtifact(File repo, String groupId, String artifactId, String version) {
+        File artifactDir = new File(repo, groupId + File.separator + artifactId + File.separator + version)
 
         if (artifactDir.exists() && artifactDir.isDirectory()) {
             File artifactFile = artifactDir.listFiles().find {
@@ -701,7 +677,7 @@ class RestGenerator implements FileUtil {
         }
 
         zipFile.entries().findAll { !it.directory }.each {
-            println "Writing File " + it.name + "..."
+            log.debug "Writing File " + it.name + "..."
             new File(target, it.name).text = zipFile.getInputStream(it).text
         }
     }

@@ -1,6 +1,5 @@
 package com.avioconsulting.mule
 
-import groovy.json.JsonSlurper
 import org.apache.commons.lang.StringEscapeUtils
 import org.apache.maven.artifact.repository.ArtifactRepository
 import org.apache.maven.model.Dependency
@@ -12,9 +11,6 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 import org.apache.maven.plugins.annotations.ResolutionScope
-import java.util.zip.ZipFile
-import java.nio.file.Files
-import java.nio.file.Paths
 
 @Mojo(name = 'generateFlowRest',
         requiresDependencyResolution = ResolutionScope.COMPILE)
@@ -62,9 +58,8 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             defaultValue = 'true')
     private boolean insertApiNameInListenerPath
 
-    // TODO: Remove until we prove we need it
-//    @Parameter(property = 'httpConfigName')
-//    private String httpConfigName
+    @Parameter(property = 'httpConfigName')
+    private String httpConfigName
 
     @Parameter(property = 'httpListenerBasePath')
     private String httpListenerBasePath
@@ -97,12 +92,22 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
 
+        // Maven will try and resolve the property if it is set on the annotation as default value
+        if (!httpConfigName) {
+            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
+            httpConfigName = '${http.listener.config}'
+        }
+
+        // Unescape listener base path to support passing property references as part of the path ${}
+        httpListenerPath = StringEscapeUtils.unescapeJava(httpListenerPath)
+
         RestGenerator generator = new RestGenerator(log)
 
         // Using Local RAML
         if (ramlDirectory) {
             log.info "Using local RAML files in directory: ${ramlDirectory.absolutePath}"
             assert ramlDirectory.exists()
+            assert new File(ramlDirectory, ramlFilename).exists()
             generator.generateFromLocal(mavenProject.basedir,
                     apiName,
                     apiVersion,
@@ -135,7 +140,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                     ramlVersion,
                     new File((new URL(local.url)).toURI()))
         // Using RAML from Design Center
-        } else {
+        } else if(ramlDcProject && ramlDcBranch) {
             log.info "Using Design Center project ${ramlDcBranch} and branch ${ramlDcBranch}"
             if (anypointUsername && anypointPassword) {
                 generator.generateFromDesignCenterWithPassword(mavenProject.basedir,
@@ -166,8 +171,11 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             } else {
                 throw new MojoFailureException('Values must be provided for either anypointUser/anypointPassword or anypointConnectedAppId/anypointConnectedAppSecret')
             }
+        } else {
+            throw new MojoFailureException('Values must be provided for either ramlDirectory/ramlFilename, ramlGroupId/ramlArtifactId or ramlDcProject/ramlDcBranch/ramlFilename')
         }
 
+        // TODO: This needs to be done in the generator for both local and DC
         // Use first RAML file in the root directory as the main one if a specific one is not provided
 //        if (!ramlFilename || ramlFilename == 'NotUsed') {
 //
@@ -178,14 +186,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 //            log.info "Assuming ${ramlFilename} is the top level RAML file"
 //        }
 
-        // Set default http listener config name if not provided.
-        // Maven will try and resolve the property if it is set on the annotation as default value
-//        if (!httpListenerConfigName) {
-//            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
-//            httpListenerConfigName = '${http.listener.config}'
-//        }
-//
-//        // Unescape listener base path to support passing property references as part of the path ${}
-//        httpListenerBasePath = StringEscapeUtils.unescapeJava(httpListenerBasePath)
+
     }
 }
