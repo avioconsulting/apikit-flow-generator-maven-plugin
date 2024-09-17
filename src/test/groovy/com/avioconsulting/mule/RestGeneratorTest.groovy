@@ -8,6 +8,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
+import java.nio.file.Paths
+
 import static org.hamcrest.CoreMatchers.*
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -512,7 +514,7 @@ class RestGeneratorTest implements FileUtil {
         def apiKitConfig = xmlNode[apiKit.'config'][0]
         assert apiKitConfig
         assertThat apiKitConfig.'@disableValidations',
-                   is(equalTo('${skip.apikit.validation}'))
+                   is(equalTo('${apikit.validation}'))
     }
 
     def getChildNodeNames(Node node) {
