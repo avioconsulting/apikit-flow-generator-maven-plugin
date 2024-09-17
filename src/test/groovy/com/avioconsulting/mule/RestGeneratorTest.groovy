@@ -715,12 +715,12 @@ class RestGeneratorTest implements FileUtil {
     @Test
     void jks_is_binary() {
         def keystore = Paths.get(keystoreDir.absolutePath, 'listener_keystore_local.jks')
-        assert isBinary(keystore)
+        assert !isText(keystore)
     }
 
     @Test
     void raml_is_not_binary() {
         def raml = Paths.get(apiDir.absolutePath, 'ref_type.raml')
-        assert !isBinary(raml)
+        assert isText(raml)
     }
 }
