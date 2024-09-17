@@ -5,8 +5,12 @@ import com.avioconsulting.mule.anypoint.api.credentials.model.Credential
 import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
+import groovy.json.JsonSlurper
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
+import org.apache.maven.model.Dependency
+import org.apache.maven.plugin.MojoFailureException
+import org.apache.maven.project.MavenProject
 import org.jdom2.CDATA
 import org.jdom2.Element
 import org.jdom2.Namespace
@@ -19,7 +23,9 @@ import org.mule.tools.apikit.MainAppScaffolder
 import org.mule.tools.apikit.model.RuntimeEdition
 import org.mule.tools.apikit.model.ScaffolderContext
 import org.mule.tools.apikit.model.ScaffoldingConfiguration
-import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugin.logging.Log
+
+import java.util.zip.ZipFile;
 
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
@@ -37,7 +43,7 @@ class RestGenerator implements FileUtil {
     private Log log;
 
 
-    public RestGenerator(Log log) {
+    RestGenerator(Log log) {
         this.log = log
     }
 
@@ -56,7 +62,7 @@ class RestGenerator implements FileUtil {
  * @param httpResponse a String representing the HTTP response // TODO: Was used to replace default http response, remove
  * @param httpErrorResponse a String representing the HTTP error response // TODO: Was used to replace default error response, remove
  */
-    public void generateFromLocal(File projectDirectory,
+    void generateFromLocal(File projectDirectory,
                                   String apiName,
                                   String apiVersion,
                                   String httpListenerBasePath,
@@ -89,23 +95,24 @@ class RestGenerator implements FileUtil {
         this.finalizeProject(tmpDirectory, projectDirectory)
     }
 
-    public void generateFromDesignCenterWithPassword(File projectDirectory,
-                                         String apiName,
-                                         String apiVersion,
-                                         String httpListenerBasePath,
-                                         String httpListenerPath,
-                                         boolean insertApiNameInListenerPath,
-                                         String ramlDcProject,
-                                         String ramlDcBranch,
-                                         String ramlFilename,
-                                         String anypointOrganizationName,
-                                         String anypointUserName,
-                                         String anypointPassword) {
+    void generateFromDesignCenterWithPassword(File projectDirectory,
+                                                     String apiName,
+                                                     String apiVersion,
+                                                     String httpListenerBasePath,
+                                                     String httpListenerPath,
+                                                     boolean insertApiNameInListenerPath,
+                                                     String ramlDcProject,
+                                                     String ramlDcBranch,
+                                                     String ramlFilename,
+                                                     String anypointOrganizationName,
+                                                     String anypointUserName,
+                                                     String anypointPassword) {
         generateFromDesignCenter(projectDirectory, apiName, apiVersion, httpListenerBasePath, httpListenerPath,
-                insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, new UsernamePasswordCredential(anypointUserName, anypointPassword))
+                insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName,
+                new UsernamePasswordCredential(anypointUserName, anypointPassword))
     }
 
-    public void generateFromDesignCenter(File projectDirectory,
+    void generateFromDesignCenter(File projectDirectory,
                                          String apiName,
                                          String apiVersion,
                                          String httpListenerBasePath,
@@ -118,19 +125,21 @@ class RestGenerator implements FileUtil {
                                          String anypointConnectedAppId,
                                          String anypointConnectedAppSecret) {
         generateFromDesignCenter(projectDirectory, apiName, apiVersion, httpListenerBasePath, httpListenerPath,
-        insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, new ConnectedAppCredential(anypointConnectedAppId, anypointConnectedAppSecret))
+                insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName,
+                new ConnectedAppCredential(anypointConnectedAppId, anypointConnectedAppSecret))
     }
-        public void generateFromDesignCenter(File projectDirectory,
-                                             String apiName,
-                                             String apiVersion,
-                                             String httpListenerBasePath,
-                                             String httpListenerPath,
-                                             boolean insertApiNameInListenerPath,
-                                             String ramlDcProject,
-                                             String ramlDcBranch,
-                                             String ramlFilename,
-                                             String anypointOrganizationName,
-                                             Credential credential) {
+
+    void generateFromDesignCenter(File projectDirectory,
+                                         String apiName,
+                                         String apiVersion,
+                                         String httpListenerBasePath,
+                                         String httpListenerPath,
+                                         boolean insertApiNameInListenerPath,
+                                         String ramlDcProject,
+                                         String ramlDcBranch,
+                                         String ramlFilename,
+                                         String anypointOrganizationName,
+                                         Credential credential) {
         // Download raml from DC into project
         def apiDirectory = join(projectDirectory,
                 'src',
@@ -174,17 +183,35 @@ class RestGenerator implements FileUtil {
         this.finalizeProject(tmpDirectory, projectDirectory)
     }
 
-    public void generateFromExchange(File projectDirectory,
+    void generateFromExchange(File projectDirectory,
                                      String apiName,
                                      String apiVersion,
                                      String httpListenerBasePath,
                                      String httpListenerPath,
                                      boolean insertApiNameInListenerPath,
                                      String ramlGroupId,
-                                     String ramlArtifactId) {
+                                     String ramlArtifactId,
+                                     String ramlVersion,
+                                     File localRepository) {
 
         // Create temp project
+        File tmpDirectory = this.setupTempProject(projectDirectory)
+        def tmpApiDirectory = join(tmpDirectory,
+                'src',
+                'main',
+                'resources',
+                'api')
+        tmpApiDirectory.mkdirs()
         // Find and expand RAML dependencies into temp project
+
+        log.info "Using local m2 repository: " + localRepository
+
+        // Find and expand RAML dependencies into tmp project for scaffolding
+        File raml = getArtifact(localRepository, ramlGroupId, ramlArtifactId, ramlVersion)
+        expandArtifact(raml, tmpApiDirectory)
+        processDeps(tmpApiDirectory, localRepository)
+
+        def ramlFilename = getMainRaml(tmpApiDirectory)
         // do the work
         // Copy only relevant temp project files back to real project
     }
@@ -218,11 +245,11 @@ class RestGenerator implements FileUtil {
         // Generate the flows
         // TODO: KK - Need ramlFile, can we infer:
         def ramlFile = join(projectDirectory,
-                            'src',
-                            'main',
-                            'resources',
-                            'api',
-                            apiName + '.raml')
+                'src',
+                'main',
+                'resources',
+                'api',
+                apiName + '.raml')
         assert ramlFile.exists()
 
         // Scaffold the RAML
@@ -238,9 +265,9 @@ class RestGenerator implements FileUtil {
         // Write out configuration file(s) in src/main/mule
         // TODO: KK - Need appDirectory, can we infer:
         def appDirectory = join(projectDirectory,
-                                    'src',
-                                    'main',
-                                    'mule')
+                'src',
+                'main',
+                'mule')
         assert appDirectory.exists()
 
         result.generatedConfigs.each { config ->
@@ -258,20 +285,17 @@ class RestGenerator implements FileUtil {
 
         // Make updates to the generated base flow
         alterGeneratedFlow(flowPath,
-                            apiName,
-                            apiVersion,
-                            insertApiNameInListenerPath,
-                            httpListenerBasePath,
-                            httpListenerPath)
+                apiName,
+                apiVersion,
+                insertApiNameInListenerPath,
+                httpListenerBasePath,
+                httpListenerPath)
 
     }
 
     public void finalizeProject(File tempDirectory, File projectDirectory) {
         // copy all but src/main/resources/api
     }
-
-
-
 
 
     static generate(File tempDirectory,
@@ -405,12 +429,12 @@ class RestGenerator implements FileUtil {
                 apiName)
 
         modifyHttpListeners(rootElement,
-                            'cloudhub-https-listener', // TODO: httpConfigName - Did we decide if we are going to allow to change this?
-                            insertApiNameInListenerPath,
-                            apiName,
-                            apiVersion,
-                            httpListenerBasePath,
-                            httpListenerPath)
+                'cloudhub-https-listener', // TODO: httpConfigName - Did we decide if we are going to allow to change this?
+                insertApiNameInListenerPath,
+                apiName,
+                apiVersion,
+                httpListenerBasePath,
+                httpListenerPath)
 
         // Adds api.validation parameter
         parameterizeApiKitConfig(rootElement)
@@ -435,16 +459,16 @@ class RestGenerator implements FileUtil {
 
     // TODO: Remove when done...
     private static void alterGeneratedFlow_old(File flowPath,
-                                           String apiName,
-                                           String apiVersion,
-                                           String apiBaseName,
-                                           boolean insertApiNameInListenerPath,
-                                           String httpListenerBasePath,
-                                           String httpListenerConfigName,
-                                           String insertXmlBeforeRouter,
-                                           String errorHandler,
-                                           String httpResponse,
-                                           String httpErrorResponse) {
+                                               String apiName,
+                                               String apiVersion,
+                                               String apiBaseName,
+                                               boolean insertApiNameInListenerPath,
+                                               String httpListenerBasePath,
+                                               String httpListenerConfigName,
+                                               String insertXmlBeforeRouter,
+                                               String errorHandler,
+                                               String httpResponse,
+                                               String httpErrorResponse) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
@@ -612,7 +636,7 @@ class RestGenerator implements FileUtil {
             def listenerPathAttribute = listener.getAttribute('path')
             assert listenerPathAttribute
 
-            if(httpListenerPath) {
+            if (httpListenerPath) {
                 listenerPathAttribute.value = httpListenerPath
             } else {
                 def apiParts = []
@@ -620,7 +644,7 @@ class RestGenerator implements FileUtil {
                     apiParts << httpListenerBasePath
                 }
 
-                if(insertApiNameInListenerPath) {
+                if (insertApiNameInListenerPath) {
                     apiParts << apiName
                 }
 
@@ -653,5 +677,58 @@ class RestGenerator implements FileUtil {
         // we're "moving" the element from 1 doc to another so have to detach it
         def elementToInsert = newXmlDocument.detachRootElement()
         listener.addContent(elementToInsert)
+    }
+
+    File getArtifact(File mvnRepo, String groupId, String artifactId, String version) {
+        File artifactDir = new File(mvnRepo, groupId + File.separator + artifactId + File.separator + version)
+
+        if (artifactDir.exists() && artifactDir.isDirectory()) {
+            File artifactFile = artifactDir.listFiles().find {
+                it.name.endsWith('.zip')
+            }
+            return artifactFile
+        } else {
+            return null
+        }
+    }
+
+    void expandArtifact(File artifact, File target) {
+        ZipFile zipFile = new ZipFile(artifact)
+
+        zipFile.entries().findAll { it.directory }.each {
+            log.debug "Creating Dir " + it.name
+            new File(target, it.name).mkdirs()
+        }
+
+        zipFile.entries().findAll { !it.directory }.each {
+            println "Writing File " + it.name + "..."
+            new File(target, it.name).text = zipFile.getInputStream(it).text
+        }
+    }
+
+    def getExchangeInfo(File ramlDirectory) {
+        def js = new JsonSlurper()
+        return js.parse(new File(ramlDirectory, 'exchange.json'))
+    }
+
+    def getMainRaml(File ramlDirectory) {
+        getExchangeInfo(ramlDirectory).main
+    }
+
+    void processDeps(File ramlDirectory, File localRepository) {
+        // Get Exchange Info
+        def exchangeInfo = getExchangeInfo(ramlDirectory)
+
+        // If Has deps
+        if (exchangeInfo.dependencies.size() > 0) {
+            def modulesDir = new File(ramlDirectory, 'exchange_modules')
+            modulesDir.mkdirs()
+            exchangeInfo.dependencies.each { dep ->
+                def artifact = getArtifact(localRepository, dep.groupId, dep.assetId, dep.version)
+                def targetDir = new File(modulesDir, dep.groupId + File.separator + dep.assetId + File.separator + dep.version)
+                targetDir.mkdirs()
+                expandArtifact(artifact, targetDir)
+            }
+        }
     }
 }

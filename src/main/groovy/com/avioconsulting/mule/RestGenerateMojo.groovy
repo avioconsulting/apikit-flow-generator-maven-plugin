@@ -1,12 +1,6 @@
 package com.avioconsulting.mule
 
-import com.avioconsulting.mule.anypoint.api.credentials.model.ConnectedAppCredential
-import com.avioconsulting.mule.anypoint.api.credentials.model.Credential
-import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
-import com.avioconsulting.mule.designcenter.DesignCenterDeployer
-import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import groovy.json.JsonSlurper
-import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.StringEscapeUtils
 import org.apache.maven.artifact.repository.ArtifactRepository
 import org.apache.maven.model.Dependency
@@ -103,158 +97,95 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
 
-        RestGenerator generator = new RestGenerator()
+        RestGenerator generator = new RestGenerator(log)
 
         // Using Local RAML
         if (ramlDirectory) {
             log.info "Using local RAML files in directory: ${ramlDirectory.absolutePath}"
             assert ramlDirectory.exists()
-            generator.generateFromLocal(mavenProject.basedir, apiName, apiVersion, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath, ramlDirectory, ramlFilename)
+            generator.generateFromLocal(mavenProject.basedir,
+                    apiName,
+                    apiVersion,
+                    httpListenerBasePath,
+                    httpListenerPath,
+                    insertApiNameInListenerPath,
+                    ramlDirectory,
+                    ramlFilename)
         // Using RAML from Exchange
         } else if (ramlGroupId && ramlArtifactId) {
             log.info "Using RAML artifact from exchange: ${ramlGroupId}:${ramlArtifactId}"
-
-            // Copy project to tmp directory for scaffolding
-            FileUtils.copyDirectory(projectDir, tmpProject)
-
-            def mvnRepo = new File((new URL(local.url)).toURI())
-            log.info "Using local m2 repository: " + mvnRepo.absolutePath
-            def ramlVersion
+            String ramlVersion = null
             mavenProject.getDependencies().each { Dependency dep ->
                 if(dep.groupId == ramlGroupId && dep.artifactId == ramlArtifactId) {
                     ramlVersion = dep.getVersion()
                 }
             }
-            if(ramlVersion == null) {
+            if(!ramlVersion) {
                 throw new MojoFailureException("No RAML dependency found in pom.xml for ${ramlGroupId}:${ramlArtifactId}")
             }
 
-            // Find and expand RAML dependencies into tmp project for scaffolding
-            File raml = getArtifact(mvnRepo, ramlGroupId, ramlArtifactId, ramlVersion)
-            expandArtifact(raml, tmpApiDirectory)
-            ramlFilename = getMainRaml(tmpApiDirectory)
-            processDeps(tmpApiDirectory, mvnRepo)
+            generator.generateFromExchange(mavenProject.basedir,
+                    apiName,
+                    apiVersion,
+                    httpListenerBasePath,
+                    httpListenerPath,
+                    insertApiNameInListenerPath,
+                    ramlGroupId,
+                    ramlArtifactId,
+                    ramlVersion,
+                    new File((new URL(local.url)).toURI()))
+        // Using RAML from Design Center
         } else {
             log.info "Using Design Center project ${ramlDcBranch} and branch ${ramlDcBranch}"
-            if(anypointUsername && anypointPassword) {
-                generator.generateFromDesignCenterWithPassword(mavenProject.basedir, apiName, apiVersion, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, anypointUsername, anypointPassword)
-            } else if(anypointConnectedAppId && anypointConnectedAppSecret) {
-                generator.generateFromDesignCenter(mavenProject.basedir, apiName, apiVersion, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, anypointConnectedAppId, anypointConnectedAppSecret)
+            if (anypointUsername && anypointPassword) {
+                generator.generateFromDesignCenterWithPassword(mavenProject.basedir,
+                        apiName,
+                        apiVersion,
+                        httpListenerBasePath,
+                        httpListenerPath,
+                        insertApiNameInListenerPath,
+                        ramlDcProject,
+                        ramlDcBranch,
+                        ramlFilename,
+                        anypointOrganizationName,
+                        anypointUsername,
+                        anypointPassword)
+            } else if (anypointConnectedAppId && anypointConnectedAppSecret) {
+                generator.generateFromDesignCenter(mavenProject.basedir,
+                        apiName,
+                        apiVersion,
+                        httpListenerBasePath,
+                        httpListenerPath,
+                        insertApiNameInListenerPath,
+                        ramlDcProject,
+                        ramlDcBranch,
+                        ramlFilename,
+                        anypointOrganizationName,
+                        anypointConnectedAppId,
+                        anypointConnectedAppSecret)
             } else {
                 throw new MojoFailureException('Values must be provided for either anypointUser/anypointPassword or anypointConnectedAppId/anypointConnectedAppSecret')
             }
         }
 
         // Use first RAML file in the root directory as the main one if a specific one is not provided
-        if (!ramlFilename || ramlFilename == 'NotUsed') {
-
-            def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
-                    '*.raml')
-            // we don't want the full path
-            ramlFilename = new File(topLevelFiles[0]).name
-            log.info "Assuming ${ramlFilename} is the top level RAML file"
-        }
+//        if (!ramlFilename || ramlFilename == 'NotUsed') {
+//
+//            def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
+//                    '*.raml')
+//            // we don't want the full path
+//            ramlFilename = new File(topLevelFiles[0]).name
+//            log.info "Assuming ${ramlFilename} is the top level RAML file"
+//        }
 
         // Set default http listener config name if not provided.
         // Maven will try and resolve the property if it is set on the annotation as default value
-        if (!httpListenerConfigName) {
-            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
-            httpListenerConfigName = '${http.listener.config}'
-        }
-
-        // Unescape listener base path to support passing property references as part of the path ${}
-        httpListenerBasePath = StringEscapeUtils.unescapeJava(httpListenerBasePath)
-
-        RestGenerator.generate(tmpProject,
-                mavenProject.basedir,
-                ramlFilename,
-                apiName,
-                apiCurrentVersion,
-                false,
-                insertApiNameInListenerPath,
-                httpListenerBasePath,
-                mavenProject.artifactId,
-                httpListenerConfigName,
-                this.tempFileOfXmlToInsertBeforeRouter?.text,
-                this.tempFileErrorHandlerXml?.text,
-                this.tempFileOfHttpResponseXml?.text,
-                this.tempFileOfHttpErrorResponseXml?.text)
-      
-        replaceNewlinesRecursively(mavenProject.basedir.toURI())
-    }
-
-
-    def replaceNewlinesRecursively(path) {
-        Files.walk(Paths.get(path)).forEach { filePath ->
-            if(!Files.isDirectory(filePath) && isText(filePath)){
-                def content = new String(Files.readAllBytes(filePath))
-                content = content.replaceAll("\r\n", "\n")
-                Files.write(filePath, content.getBytes())
-            }
-        }
-    }
-
-
-    // New code
-
-    static def getMainRaml(File ramlDirectory) {
-        def js = new JsonSlurper()
-        return js.parse(new File(ramlDirectory, 'exchange.json')).main
-    }
-
-    static def processDeps(File ramlDirectory, File mvnRepo) {
-        // Get Exchange Info
-        def exchangeInfo = getExchangeInfo(ramlDirectory)
-
-        // If Has deps
-        if(exchangeInfo.dependencies.size() > 0) {
-            def modulesDir = new File(ramlDirectory, 'exchange_modules')
-            modulesDir.mkdirs()
-            exchangeInfo.dependencies.each { dep ->
-                def artifact = getArtifact(mvnRepo, dep.groupId, dep.assetId, dep.version)
-                def targetDir = new File(modulesDir, dep.groupId + File.separator + dep.assetId + File.separator + dep.version)
-                targetDir.mkdirs()
-                expandArtifact(artifact, targetDir)
-            }
-        }
-    }
-
-
-    static def getExchangeInfo(File ramlDirectory) {
-        def js = new JsonSlurper()
-        return js.parse(new File(ramlDirectory, 'exchange.json'))
-    }
-
-    static File getArtifact(File mvnRepo, String groupId, String artifactId, String version) {
-
-        println "mvnRepo: " + mvnRepo.absolutePath
-        println "groupId: " + groupId
-        println "artifactId: " + artifactId
-        println "version: " + version
-        File artifactDir = new File(mvnRepo, groupId + File.separator + artifactId + File.separator + version)
-        println artifactDir.absolutePath
-
-        if (artifactDir.exists() && artifactDir.isDirectory()) {
-            File artifactFile  = artifactDir.listFiles().find {
-                it.name.endsWith('.zip')
-            }
-            return artifactFile
-        } else {
-            return null
-        }
-    }
-
-    static def expandArtifact(File artifact, File target) {
-        ZipFile zipFile = new ZipFile(artifact)
-
-        zipFile.entries().findAll { it.directory }.each {
-            println "Creating Dir " + it.name + "..."
-            new File(target, it.name).mkdirs()
-        }
-
-        zipFile.entries().findAll { !it.directory }.each {
-            println "Writing File " + it.name + "..."
-            new File(target, it.name).text = zipFile.getInputStream(it).text
-        }
+//        if (!httpListenerConfigName) {
+//            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
+//            httpListenerConfigName = '${http.listener.config}'
+//        }
+//
+//        // Unescape listener base path to support passing property references as part of the path ${}
+//        httpListenerBasePath = StringEscapeUtils.unescapeJava(httpListenerBasePath)
     }
 }
