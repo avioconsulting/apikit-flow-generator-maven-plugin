@@ -101,7 +101,13 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         // Unescape listener base path to support passing property references as part of the path ${}
         httpListenerPath = StringEscapeUtils.unescapeJava(httpListenerPath)
 
-        RestGenerator generator = new RestGenerator(log)
+        RestGenerator generator = new RestGenerator(log,
+                apiName,
+                apiVersion,
+                httpConfigName,
+                httpListenerBasePath,
+                httpListenerPath,
+                insertApiNameInListenerPath)
 
         // Using Local RAML
         if (ramlDirectory) {
@@ -109,11 +115,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             assert ramlDirectory.exists()
             assert new File(ramlDirectory, ramlFilename).exists()
             generator.generateFromLocal(mavenProject.basedir,
-                    apiName,
-                    apiVersion,
-                    httpListenerBasePath,
-                    httpListenerPath,
-                    insertApiNameInListenerPath,
                     ramlDirectory,
                     ramlFilename)
         // Using RAML from Exchange
@@ -130,11 +131,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             }
 
             generator.generateFromExchange(mavenProject.basedir,
-                    apiName,
-                    apiVersion,
-                    httpListenerBasePath,
-                    httpListenerPath,
-                    insertApiNameInListenerPath,
                     ramlGroupId,
                     ramlArtifactId,
                     ramlVersion,
@@ -144,11 +140,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             log.info "Using Design Center project ${ramlDcBranch} and branch ${ramlDcBranch}"
             if (anypointUsername && anypointPassword) {
                 generator.generateFromDesignCenterWithPassword(mavenProject.basedir,
-                        apiName,
-                        apiVersion,
-                        httpListenerBasePath,
-                        httpListenerPath,
-                        insertApiNameInListenerPath,
                         ramlDcProject,
                         ramlDcBranch,
                         ramlFilename,
@@ -157,11 +148,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                         anypointPassword)
             } else if (anypointConnectedAppId && anypointConnectedAppSecret) {
                 generator.generateFromDesignCenter(mavenProject.basedir,
-                        apiName,
-                        apiVersion,
-                        httpListenerBasePath,
-                        httpListenerPath,
-                        insertApiNameInListenerPath,
                         ramlDcProject,
                         ramlDcBranch,
                         ramlFilename,
@@ -174,17 +160,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         } else {
             throw new MojoFailureException('Values must be provided for either ramlDirectory/ramlFilename, ramlGroupId/ramlArtifactId or ramlDcProject/ramlDcBranch/ramlFilename')
         }
-
-        // TODO: This needs to be done in the generator for both local and DC
-        // Use first RAML file in the root directory as the main one if a specific one is not provided
-//        if (!ramlFilename || ramlFilename == 'NotUsed') {
-//
-//            def topLevelFiles = new FileNameFinder().getFileNames(apiDirectory.absolutePath,
-//                    '*.raml')
-//            // we don't want the full path
-//            ramlFilename = new File(topLevelFiles[0]).name
-//            log.info "Assuming ${ramlFilename} is the top level RAML file"
-//        }
 
 
     }
