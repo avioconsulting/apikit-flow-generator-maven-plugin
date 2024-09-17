@@ -25,11 +25,11 @@ import java.nio.file.Paths
 @Mojo(name = 'generateFlowRest',
         requiresDependencyResolution = ResolutionScope.COMPILE)
 class RestGenerateMojo extends AbstractMojo implements FileUtil {
-    @Parameter(property = 'api.name')
+    @Parameter(property = 'apiName')
     private String apiName
 
-    @Parameter(property = 'api.current.version')
-    private String apiCurrentVersion
+    @Parameter(property = 'apiVersion')
+    private String apiVersion
 
     @Parameter(property = 'anypointUsername')
     private String anypointUsername
@@ -39,7 +39,6 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
 
     @Parameter(property = 'anypointConnectedAppId')
     private String anypointConnectedAppId
-
 
     @Parameter(property = 'anypointConnectedAppSecret')
     private String anypointConnectedAppSecret
@@ -65,27 +64,35 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'ramlArtifactId')
     private String ramlArtifactId
 
-    @Parameter(property = 'apikitgen.insert.api.name.in.listener.path',
+    @Parameter(property = 'insertApiNameInListenerPath',
             defaultValue = 'true')
     private boolean insertApiNameInListenerPath
 
-    @Parameter(property = 'http.listener.config.name')
-    private String httpListenerConfigName
+    // TODO: Remove until we prove we need it
+//    @Parameter(property = 'httpConfigName')
+//    private String httpConfigName
 
-    @Parameter(property = 'http.listener.base.path')
+    @Parameter(property = 'httpListenerBasePath')
     private String httpListenerBasePath
 
-    @Parameter(property = 'temp.file.of.xml.to.insert.before.router')
-    private File tempFileOfXmlToInsertBeforeRouter
+    @Parameter(property = 'httpListenerPath')
+    private String httpListenerPath
 
-    @Parameter(property = 'temp.file.of.error.handler.xml.to.replace.stock.with')
-    private File tempFileErrorHandlerXml
-
-    @Parameter(property = 'temp.file.of.xml.http.response')
-    private File tempFileOfHttpResponseXml
-
-    @Parameter(property = 'temp.file.of.xml.http.error.response')
-    private File tempFileOfHttpErrorResponseXml
+//    // TODO: Do we need to keep this at all?  Will remove from refactored code initially
+//    @Parameter(property = 'temp.file.of.xml.to.insert.before.router')
+//    private File tempFileOfXmlToInsertBeforeRouter
+//
+//    // TODO: Do we need to keep this at all?  Will remove from refactored code initially
+//    @Parameter(property = 'temp.file.of.error.handler.xml.to.replace.stock.with')
+//    private File tempFileErrorHandlerXml
+//
+//    // TODO: Do we need to keep this at all?  Will remove from refactored code initially
+//    @Parameter(property = 'temp.file.of.xml.http.response')
+//    private File tempFileOfHttpResponseXml
+//
+//    // TODO: Do we need to keep this at all?  Will remove from refactored code initially
+//    @Parameter(property = 'temp.file.of.xml.http.error.response')
+//    private File tempFileOfHttpErrorResponseXml
 
     @Parameter(defaultValue = '${localRepository}', readonly = true, required = true)
     private ArtifactRepository local

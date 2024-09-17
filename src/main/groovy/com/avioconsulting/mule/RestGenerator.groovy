@@ -28,6 +28,91 @@ class RestGenerator implements FileUtil {
     public static final Namespace ee = Namespace.getNamespace('ee',
             'http://www.mulesoft.org/schema/mule/ee/core')
 
+
+/**
+ * <description>
+ * @param projectDirectory The project directory where we will be generating the Mule flows
+ * @param ramlPath Path within src/main/resources/api to the RAML to be scaffolded  // THIS SHOULD GO AWAY NOW
+ * @param apiName The API name to optionally be used in the HTTP listener path depending on the value of insertApiNameInListenerPath
+ * @param apiVersion The API version to be used in the HTTP listener path unless httpListenerPath is provided
+ * @param insertApiNameInListenerPath a boolean, true if apiName should be inserted in the HTTP listener path before the version
+ * @param httpListenerBasePath A base path to be used in the HTTP listener path before the apiName or apiVersion
+ * @param httpListenerPath The full HTTP listener path to be used
+ * @param httpConfigName The name of the HTTP configuration to be referenced by the HTTP listeners // TODO: should this be optional?
+ * @param insertXmlBeforeRouter a String representing the XML to be inserted before router // TODO: REMOVED
+ * @param errorHandler a String representing the error handler // TODO: an XML representation of a new error-handler, remove
+ * @param httpResponse a String representing the HTTP response // TODO: Was used to replace default http response, remove
+ * @param httpErrorResponse a String representing the HTTP error response // TODO: Was used to replace default error response, remove
+ */
+    public void generateFromLocal(File projectDirectory,
+                                  String apiName,
+                                  String apiVersion,
+                                  String httpListenerBasePath,
+                                  String httpListenerPath,
+                                  boolean insertApiNameInListenerPath,
+                                  String ramlDirectory,
+                                  String ramlFilename) {
+        // Using local, we will determine RAML Path (assuming we need it)
+        // ramlDirectory and ramlFilename are the required properties
+
+        // Copy local raml into project
+        // Create temp project
+        // Do the work
+        // Copy temp project files back to real project
+    }
+
+    public void generateFromDesignCenter(File projectDirectory,
+                                         String apiName,
+                                         String apiVersion,
+                                         String httpListenerBasePath,
+                                         String httpListenerPath,
+                                         boolean insertApiNameInListenerPath,
+                                         String ramlDcProject,
+                                         String ramlDcBranch,
+                                         String ramlFilename) {
+        // Download raml from DC into project
+        // Create temp project
+        // Do the work
+        // Copy temp project files back to real project
+    }
+
+    public void generateFromExchange(File projectDirectory,
+                                     String apiName,
+                                     String apiVersion,
+                                     String httpListenerBasePath,
+                                     String httpListenerPath,
+                                     boolean insertApiNameInListenerPath,
+                                     String ramlGroupId,
+                                     String ramlArtifactId) {
+
+        // Create temp project
+        // Find and expand RAML dependencies into temp project
+        // do the work
+        // Copy only relevant temp project files back to real project
+    }
+
+    public File setupTempProject(File projectDirectory) {
+
+        return File.createTempDir()
+    }
+
+    public void generate(File projectDirectory,
+                         String apiName,
+                         String apiVersion,
+                         String httpListenerBasePath,
+                         String httpListenerPath,
+                         boolean insertApiNameInListenerPath) {
+
+    }
+
+    public void finalizeProject(File tempDirectory, File projectDirectory) {
+        // copy all but src/main/resources/api
+    }
+
+
+
+
+
     static generate(File tempDirectory,
                     File baseDirectory,
                     String ramlPath,
@@ -126,15 +211,16 @@ class RestGenerator implements FileUtil {
                 httpErrorResponse)
     }
 
-    private static void adjustRamlBaseUri(File ramlFile,
-                                          String apiName,
-                                          String mavenProjectName) {
-        def ramlText = ramlFile.text
-        def baseUri = "https://${mavenProjectName}.cloudhub.io/${apiName}/{version}"
-        def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
-                "baseUri: ${baseUri}")
-        ramlFile.write fixedRaml
-    }
+    // TODO: TO BE REMOVED
+//    private static void adjustRamlBaseUri(File ramlFile,
+//                                          String apiName,
+//                                          String mavenProjectName) {
+//        def ramlText = ramlFile.text
+//        def baseUri = "https://${mavenProjectName}.cloudhub.io/${apiName}/{version}"
+//        def fixedRaml = ramlText.replaceAll(/baseUri: .*/,
+//                "baseUri: ${baseUri}")
+//        ramlFile.write fixedRaml
+//    }
 
     private static void alterGeneratedFlow(File flowPath,
                                            String apiName,
@@ -283,13 +369,12 @@ class RestGenerator implements FileUtil {
     }
 
     private static void modifyHttpListeners(Element flowNode,
+                                            String httpConfigName,
+                                            boolean insertApiNameInListenerPath,
                                             String apiName,
                                             String apiVersion,
-                                            boolean insertApiNameInListenerPath,
                                             String httpListenerBasePath,
-                                            String httpListenerConfigName,
-                                            String httpResponse,
-                                            String httpErrorResponse) {
+                                            String httpListenerPath) {
         def listeners = flowNode.getChildren('flow',
                 core)
                 .collect { flow ->
@@ -297,34 +382,42 @@ class RestGenerator implements FileUtil {
                             http)
                 }.flatten()
         listeners.each { Element listener ->
-            // supplied via properties to allow HTTP vs. HTTPS toggle at runtime
+
+            // Replace config-ref with reference to correct HTTP Configuration
             def configRefAttribute = listener.getAttribute('config-ref')
             assert configRefAttribute
-            configRefAttribute.value = httpListenerConfigName
-            // want to be able to combine projects later, so be able to share a single listener config
-            // by using paths
+            configRefAttribute.value = httpConfigName
+
+            // Use httpListenerPath if provided, otherwise build conditional path based on arguments
             def listenerPathAttribute = listener.getAttribute('path')
             assert listenerPathAttribute
-            def apiParts = []
-            if (insertApiNameInListenerPath) {
-                apiParts << apiName
-            }
-            if (httpListenerBasePath) {
-                listenerPathAttribute.value = httpListenerBasePath
+
+            if(httpListenerPath) {
+                listenerPathAttribute.value = httpListenerPath
             } else {
+                def apiParts = []
+                if (httpListenerBasePath) {
+                    apiParts << httpListenerBasePath
+                }
+
+                if(insertApiNameInListenerPath) {
+                    apiParts << apiName
+                }
+
                 apiParts += [apiVersion, '*']
-                listenerPathAttribute.value = '/' + apiParts.join('/')
+
+                listenerPathAttribute.value = apiParts.join('/')
             }
-            if (httpResponse) {
-                replaceResponse(listener,
-                        'response',
-                        httpResponse)
-            }
-            if (httpErrorResponse) {
-                replaceResponse(listener,
-                        'error-response',
-                        httpErrorResponse)
-            }
+//            if (httpResponse) {
+//                replaceResponse(listener,
+//                        'response',
+//                        httpResponse)
+//            }
+//            if (httpErrorResponse) {
+//                replaceResponse(listener,
+//                        'error-response',
+//                        httpErrorResponse)
+//            }
         }
     }
 
