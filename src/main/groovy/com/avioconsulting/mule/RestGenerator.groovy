@@ -1,7 +1,12 @@
 package com.avioconsulting.mule
 
+import com.avioconsulting.mule.anypoint.api.credentials.model.ConnectedAppCredential
+import com.avioconsulting.mule.anypoint.api.credentials.model.Credential
+import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCredential
+import com.avioconsulting.mule.designcenter.DesignCenterDeployer
+import com.avioconsulting.mule.designcenter.HttpClientWrapper
+import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
-import org.codehaus.plexus.util.FileUtils
 import org.jdom2.CDATA
 import org.jdom2.Element
 import org.jdom2.Namespace
@@ -14,6 +19,7 @@ import org.mule.tools.apikit.MainAppScaffolder
 import org.mule.tools.apikit.model.RuntimeEdition
 import org.mule.tools.apikit.model.ScaffolderContext
 import org.mule.tools.apikit.model.ScaffoldingConfiguration
+import org.apache.maven.plugin.logging.Log;
 
 class RestGenerator implements FileUtil {
     public static final Namespace core = Namespace.getNamespace('http://www.mulesoft.org/schema/mule/core')
@@ -28,6 +34,12 @@ class RestGenerator implements FileUtil {
     public static final Namespace ee = Namespace.getNamespace('ee',
             'http://www.mulesoft.org/schema/mule/ee/core')
 
+    private Log log;
+
+
+    public RestGenerator(Log log) {
+        this.log = log
+    }
 
 /**
  * <description>
@@ -50,15 +62,47 @@ class RestGenerator implements FileUtil {
                                   String httpListenerBasePath,
                                   String httpListenerPath,
                                   boolean insertApiNameInListenerPath,
-                                  String ramlDirectory,
+                                  File ramlDirectory,
                                   String ramlFilename) {
         // Using local, we will determine RAML Path (assuming we need it)
         // ramlDirectory and ramlFilename are the required properties
 
         // Copy local raml into project
+
+        // TODO: Need logger
+        def apiDirectory = join(projectDirectory,
+                'src',
+                'main',
+                'resources',
+                'api')
+        apiDirectory.mkdirs()
+
+        // Copy RAML into Project
+        FileUtils.copyDirectory(ramlDirectory, apiDirectory)
+
         // Create temp project
+        File tmpDirectory = this.setupTempProject(projectDirectory)
+
         // Do the work
+
         // Copy temp project files back to real project
+        this.finalizeProject(tmpDirectory, projectDirectory)
+    }
+
+    public void generateFromDesignCenterWithPassword(File projectDirectory,
+                                         String apiName,
+                                         String apiVersion,
+                                         String httpListenerBasePath,
+                                         String httpListenerPath,
+                                         boolean insertApiNameInListenerPath,
+                                         String ramlDcProject,
+                                         String ramlDcBranch,
+                                         String ramlFilename,
+                                         String anypointOrganizationName,
+                                         String anypointUserName,
+                                         String anypointPassword) {
+        generateFromDesignCenter(projectDirectory, apiName, apiVersion, httpListenerBasePath, httpListenerPath,
+                insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, new UsernamePasswordCredential(anypointUserName, anypointPassword))
     }
 
     public void generateFromDesignCenter(File projectDirectory,
@@ -69,11 +113,65 @@ class RestGenerator implements FileUtil {
                                          boolean insertApiNameInListenerPath,
                                          String ramlDcProject,
                                          String ramlDcBranch,
-                                         String ramlFilename) {
+                                         String ramlFilename,
+                                         String anypointOrganizationName,
+                                         String anypointConnectedAppId,
+                                         String anypointConnectedAppSecret) {
+        generateFromDesignCenter(projectDirectory, apiName, apiVersion, httpListenerBasePath, httpListenerPath,
+        insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, new ConnectedAppCredential(anypointConnectedAppId, anypointConnectedAppSecret))
+    }
+        public void generateFromDesignCenter(File projectDirectory,
+                                             String apiName,
+                                             String apiVersion,
+                                             String httpListenerBasePath,
+                                             String httpListenerPath,
+                                             boolean insertApiNameInListenerPath,
+                                             String ramlDcProject,
+                                             String ramlDcBranch,
+                                             String ramlFilename,
+                                             String anypointOrganizationName,
+                                             Credential credential) {
         // Download raml from DC into project
+        def apiDirectory = join(projectDirectory,
+                'src',
+                'main',
+                'resources',
+                'api')
+        apiDirectory.mkdirs()
+
+        log.info 'Will fetch RAML contents from Design Center first'
+        def clientWrapper = new HttpClientWrapper('https://anypoint.mulesoft.com',
+                credential,
+                this.log,
+                anypointOrganizationName)
+        def designCenter = new DesignCenterDeployer(clientWrapper,
+                log)
+
+        def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(ramlDcProject,
+                ramlDcBranch)
+
+        log.info 'Fetched RAML files OK, now writing to disk'
+        // need our directories first
+        def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
+        folders.each { folder ->
+            new File(apiDirectory,
+                    folder.fileName).mkdirs()
+        }
+        def noDirs = existingRamlFiles - folders
+        noDirs.each { f ->
+            log.info "Writing file ${f.fileName}..."
+            new File(apiDirectory,
+                    f.fileName).text = f.contents
+        }
+
+
         // Create temp project
+        File tmpDirectory = this.setupTempProject(projectDirectory)
         // Do the work
+
+
         // Copy temp project files back to real project
+        this.finalizeProject(tmpDirectory, projectDirectory)
     }
 
     public void generateFromExchange(File projectDirectory,
@@ -92,8 +190,19 @@ class RestGenerator implements FileUtil {
     }
 
     public File setupTempProject(File projectDirectory) {
+        File tmpDirectory = File.createTempDir()
+        tmpDirectory.deleteOnExit()
+        File tmpApiDirectory = join(tmpDirectory,
+                'src',
+                'main',
+                'resources',
+                'api')
+        tmpApiDirectory.mkdirs()
+        FileUtils.copyDirectory(projectDirectory, tmpDirectory)
 
-        return File.createTempDir()
+        // TODO: Need Logger
+//        log.info "Created temp project: ${tmpProject.getAbsolutePath()}"
+        return tmpDirectory
     }
 
     public void generate(File projectDirectory,

@@ -103,35 +103,13 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Override
     void execute() throws MojoExecutionException, MojoFailureException {
 
-        File projectDir = mavenProject.basedir
-        File tmpProject = File.createTempDir()
-        tmpProject.deleteOnExit()
-        log.info "Created temp project: ${tmpProject.getAbsolutePath()}"
-
-        def apiDirectory = join(projectDir,
-                'src',
-                'main',
-                'resources',
-                'api')
-        apiDirectory.mkdirs()
-
-        def tmpApiDirectory = join(tmpProject,
-                'src',
-                'main',
-                'resources',
-                'api')
-        tmpApiDirectory.mkdirs()
+        RestGenerator generator = new RestGenerator()
 
         // Using Local RAML
         if (ramlDirectory) {
-            log.info "Copying RAMLs from ${ramlDirectory}"
+            log.info "Using local RAML files in directory: ${ramlDirectory.absolutePath}"
             assert ramlDirectory.exists()
-
-            // Copy RAML into Project
-            FileUtils.copyDirectory(ramlDirectory, apiDirectory)
-
-            // Copy project to tmp directory for scaffolding
-            FileUtils.copyDirectory(projectDir, tmpProject)
+            generator.generateFromLocal(mavenProject.basedir, apiName, apiVersion, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath, ramlDirectory, ramlFilename)
         // Using RAML from Exchange
         } else if (ramlGroupId && ramlArtifactId) {
             log.info "Using RAML artifact from exchange: ${ramlGroupId}:${ramlArtifactId}"
@@ -157,36 +135,14 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             ramlFilename = getMainRaml(tmpApiDirectory)
             processDeps(tmpApiDirectory, mvnRepo)
         } else {
-            // Using RAML from a Design Center project
-            Credential credential = new UsernamePasswordCredential(this.anypointUsername, this.anypointPassword)
-            if (this.anypointConnectedAppId != null && this.anypointConnectedAppSecret != null) {
-                credential = new ConnectedAppCredential(this.anypointConnectedAppId, this.anypointConnectedAppSecret)
+            log.info "Using Design Center project ${ramlDcBranch} and branch ${ramlDcBranch}"
+            if(anypointUsername && anypointPassword) {
+                generator.generateFromDesignCenterWithPassword(mavenProject.basedir, apiName, apiVersion, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, anypointUsername, anypointPassword)
+            } else if(anypointConnectedAppId && anypointConnectedAppSecret) {
+                generator.generateFromDesignCenter(mavenProject.basedir, apiName, apiVersion, httpListenerBasePath, httpListenerPath, insertApiNameInListenerPath, ramlDcProject, ramlDcBranch, ramlFilename, anypointOrganizationName, anypointConnectedAppId, anypointConnectedAppSecret)
+            } else {
+                throw new MojoFailureException('Values must be provided for either anypointUser/anypointPassword or anypointConnectedAppId/anypointConnectedAppSecret')
             }
-            log.info 'Will fetch RAML contents from Design Center first'
-            def clientWrapper = new HttpClientWrapper('https://anypoint.mulesoft.com',
-                    credential,
-                    this.log,
-                    this.anypointOrganizationName)
-            def designCenter = new DesignCenterDeployer(clientWrapper,
-                    log)
-          
-            def existingRamlFiles = designCenter.getExistingDesignCenterFilesByProjectName(ramlDcProject,
-                    ramlDcBranch)
-
-            log.info 'Fetched RAML files OK, now writing to disk'
-            // need our directories first
-            def folders = existingRamlFiles.findAll { f -> f.type == 'FOLDER' }
-            folders.each { folder ->
-                new File(apiDirectory,
-                        folder.fileName).mkdirs()
-            }
-            def noDirs = existingRamlFiles - folders
-            noDirs.each { f ->
-                log.info "Writing file ${f.fileName}..."
-                new File(apiDirectory,
-                        f.fileName).text = f.contents
-            }
-            FileUtils.copyDirectory(projectDir, tmpProject)
         }
 
         // Use first RAML file in the root directory as the main one if a specific one is not provided
