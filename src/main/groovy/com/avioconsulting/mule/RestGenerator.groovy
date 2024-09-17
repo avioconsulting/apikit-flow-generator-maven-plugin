@@ -103,6 +103,58 @@ class RestGenerator implements FileUtil {
                          String httpListenerPath,
                          boolean insertApiNameInListenerPath) {
 
+        // Without runtime edition EE, we won't use weaves in the output
+        def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
+
+        // Generate the flows
+        // TODO: KK - Need ramlFile, can we infer:
+        def ramlFile = join(projectDirectory,
+                            'src',
+                            'main',
+                            'resources',
+                            'api',
+                            apiName + '.raml')
+        assert ramlFile.exists()
+
+        // Scaffold the RAML
+        def parseResult = new RamlParsingStrategy().parse(ApiReference.create(ramlFile.absolutePath))
+        assert parseResult.errors == []
+        def result = scaffolder.run(ScaffoldingConfiguration.builder()
+                .withApi(parseResult.get())
+                .withMuleConfigurations([])
+                .build())
+        assert result.errors == []
+        assert result.generatedConfigs.size() > 0
+
+        // Write out configuration file(s) in src/main/mule
+        // TODO: KK - Need appDirectory, can we infer:
+        def appDirectory = join(projectDirectory,
+                                    'src',
+                                    'main',
+                                    'mule')
+        assert appDirectory.exists()
+
+        result.generatedConfigs.each { config ->
+            new File(appDirectory,
+                    config.name).text = config.content.text
+        }
+
+        def flowPath = new File(appDirectory,
+                apiName + '.xml')
+        assert flowPath.exists()
+
+        // Mule's generator will use the RAML filename by convention
+        // TODO: KK - can we not just infer the apiBaseName in alterGeneratedFlow from apiName?
+//        def apiBaseName = FilenameUtils.getBaseName(ramlPath)
+
+        // Make updates to the generated base flow
+        alterGeneratedFlow(flowPath,
+                            apiName,
+                            apiVersion,
+                            insertApiNameInListenerPath,
+                            httpListenerBasePath,
+                            httpListenerPath)
+
     }
 
     public void finalizeProject(File tempDirectory, File projectDirectory) {
@@ -201,7 +253,6 @@ class RestGenerator implements FileUtil {
         alterGeneratedFlow(flowPath,
                 apiName,
                 apiVersion,
-                apiBaseName,
                 insertApiNameInListenerPath,
                 httpListenerBasePath,
                 httpListenerConfigName,
@@ -222,7 +273,59 @@ class RestGenerator implements FileUtil {
 //        ramlFile.write fixedRaml
 //    }
 
-    private static void alterGeneratedFlow(File flowPath,
+    // TODO: KK - new implementation - intelliJ wants this to be static...
+    // TODO: should we return the modified Flow content instead of writing it? - this would make testing easier
+    // Remove listener config (this is located in global-config)
+    // Remove Console
+    // Update http:listener
+    // Add api.validation parameter to apikit:config
+    // Write new flow content (XML Pretty)
+    public void alterGeneratedFlow(File flowPath,
+                                   String apiName,
+                                   String apiVersion,
+                                   boolean insertApiNameInListenerPath,
+                                   String httpListenerBasePath,
+                                   String httpListenerPath) {
+        def builder = new SAXBuilder()
+        def document = builder.build(flowPath)
+        def rootElement = document.rootElement
+
+
+        removeHttpListenerConfigs(rootElement)
+        removeConsole(rootElement,
+                apiName)
+
+        modifyHttpListeners(rootElement,
+                            'cloudhub-https-listener', // TODO: httpConfigName - Did we decide if we are going to allow to change this?
+                            insertApiNameInListenerPath,
+                            apiName,
+                            apiVersion,
+                            httpListenerBasePath,
+                            httpListenerPath)
+
+        // Adds api.validation parameter
+        parameterizeApiKitConfig(rootElement)
+
+        // TODO: We are no longer allowing for customization
+//        def mainFlow = getMainFlow(rootElement,
+//                apiName)
+//        if (insertXmlBeforeRouter) {
+//            doInsertXmlBeforeRouter(mainFlow,
+//                    insertXmlBeforeRouter)
+//        }
+//        if (errorHandler) {
+//            replaceErrorHandler(mainFlow,
+//                    errorHandler)
+//        }
+
+        // Format XML
+        def outputter = new XMLOutputter(Format.prettyFormat)
+        outputter.output(document,
+                new FileWriter(flowPath))
+    }
+
+    // TODO: Remove when done...
+    private static void alterGeneratedFlow_old(File flowPath,
                                            String apiName,
                                            String apiVersion,
                                            String apiBaseName,
@@ -280,6 +383,7 @@ class RestGenerator implements FileUtil {
         return mainFlow
     }
 
+    // TODO: Remove, unless we have requirements for this
     private static void doInsertXmlBeforeRouter(Element mainFlow,
                                                 String insertXmlBeforeRouter) {
         def router = mainFlow.getChild('router',
@@ -294,6 +398,7 @@ class RestGenerator implements FileUtil {
                 elementToInsert)
     }
 
+    // TODO: Remove, unless we have requirements for this
     private static void replaceErrorHandler(Element mainFlow,
                                             String errorHandlerXml) {
         def existingErrorHandler = mainFlow.getChild('error-handler',
@@ -309,6 +414,7 @@ class RestGenerator implements FileUtil {
 
     private static void removeConsole(Element rootElement,
                                       String apiBaseName) {
+        // TODO: why is this called here?!
         allowDetailedValidationInfo(rootElement,
                 apiBaseName)
         def lookFor = "${apiBaseName}-console"
@@ -320,6 +426,11 @@ class RestGenerator implements FileUtil {
         rootElement.removeContent(consoleFlow)
     }
 
+    // TODO: This was being called from removeConsole - shouldn't this logic just be in the global-config?
+    // Gets the error-handler from the main flow,
+    // looks for an on-error-propagate with type BAD_REQUEST
+    // gets the transform element,
+    // writes a new DWL
     private static void allowDetailedValidationInfo(Element rootElement,
                                                     String apiBaseName) {
         def lookFor = "${apiBaseName}-main"
@@ -421,6 +532,7 @@ class RestGenerator implements FileUtil {
         }
     }
 
+    // TODO: Remove, unless we have requirements for this
     private static void replaceResponse(Element listener,
                                         String responseType,
                                         String newResponse) {
