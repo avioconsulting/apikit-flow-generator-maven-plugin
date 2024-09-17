@@ -279,7 +279,7 @@ class RestGenerator implements FileUtil {
         assert apiKitConfig
         // allow projects to control this via properties
         apiKitConfig.setAttribute('disableValidations',
-                '${apikit.validation}')
+                '${api.validation}')
     }
 
     private static void modifyHttpListeners(Element flowNode,
