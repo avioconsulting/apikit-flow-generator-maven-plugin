@@ -15,7 +15,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope
 @Mojo(name = 'generateFlowRest',
         requiresDependencyResolution = ResolutionScope.COMPILE)
 class RestGenerateMojo extends AbstractMojo implements FileUtil {
-    @Parameter(property = 'apiName')
+    @Parameter(property = 'apiName', defaultValue = '${project.artifactId}')
     private String apiName
 
     @Parameter(property = 'apiVersion')
@@ -58,7 +58,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
             defaultValue = 'true')
     private boolean insertApiNameInListenerPath
 
-    @Parameter(property = 'httpConfigName')
+    @Parameter(property = 'httpConfigName', defaultValue = 'cloudhub-https-listener')
     private String httpConfigName
 
     @Parameter(property = 'httpListenerBasePath')
@@ -93,11 +93,14 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     void execute() throws MojoExecutionException, MojoFailureException {
 
         // Maven will try and resolve the property if it is set on the annotation as default value
-        if (!httpConfigName) {
-            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
-            httpConfigName = '${http.listener.config}'
-        }
+//        if (!httpConfigName) {
+//            log.info 'No http listener config specified, using default, parameterized value of ${http.listener.config}'
+//            httpConfigName = '${http.listener.config}'
+//        }
 
+        if (!apiVersion) {
+            apiVersion = 'v' + mavenProject.version.split('\\.')[0]
+        }
         // Unescape listener base path to support passing property references as part of the path ${}
         httpListenerPath = StringEscapeUtils.unescapeJava(httpListenerPath)
 
