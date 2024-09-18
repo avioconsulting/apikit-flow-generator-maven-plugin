@@ -180,7 +180,6 @@ class RestGenerator implements FileUtil {
         String ramlFilename = getMainRaml(tmpApiDirectory)
         this.generate(tmpDirectory, ramlFilename)
 
-
         // Update APIkit router w/ exchange URL to RAML
         def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
         File mainConfigFile = join(tmpDirectory,
@@ -189,24 +188,12 @@ class RestGenerator implements FileUtil {
                                     'mule',
                                     apiBaseName + '.xml')
         def apiReferenceString = 'resource::' + ramlGroupId + ':' + ramlArtifactId + ':' + ramlVersion + ':raml:zip:' + ramlFilename
+        log.info "Updating apikit api reference to " + apiReferenceString
         mainConfigFile.text = updateApikitConfigApi(mainConfigFile, apiReferenceString)
-        
+
         // Copy only relevant temp project files back to real project
         this.finalizeProject(tmpDirectory, projectDirectory)
     }
-
-//    String updateApikitConfigApi(String xmlString, String newApiValue) {
-//        // this replaces the default namespace to 'tag0', while not invalid, its undesired
-//        // <tag0:flow name="snipe-it-sys-api-main">
-//        XmlSlurper xmlSlurper = new XmlSlurper(false, true)
-//        def xml = xmlSlurper.parseText(xmlString)
-//        // Find the apikit:config element and update its api attribute
-//        xml.'**'.find { it.name() == 'apikit:config' }?.@api = newApiValue
-//        // Convert the modified XML back to a string
-//        String xmlOutput = new groovy.xml.XmlUtil().serialize(xml)
-//        return xmlOutput
-//
-//    }
 
     public File setupTempProject(File projectDirectory) {
         File tmpDirectory = File.createTempDir()
