@@ -6,7 +6,6 @@ import com.avioconsulting.mule.anypoint.api.credentials.model.UsernamePasswordCr
 import com.avioconsulting.mule.designcenter.DesignCenterDeployer
 import com.avioconsulting.mule.designcenter.HttpClientWrapper
 import groovy.json.JsonSlurper
-import groovy.xml.XmlSlurper
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.jdom2.Element
@@ -189,7 +188,7 @@ class RestGenerator implements FileUtil {
                                     apiBaseName + '.xml')
         def apiReferenceString = 'resource::' + ramlGroupId + ':' + ramlArtifactId + ':' + ramlVersion + ':raml:zip:' + ramlFilename
         log.info "Updating apikit api reference to " + apiReferenceString
-        mainConfigFile.text = updateApikitConfigApi(mainConfigFile, apiReferenceString)
+        mainConfigFile.text = updateApikitConfig(mainConfigFile, apiReferenceString)
 
         // Copy only relevant temp project files back to real project
         this.finalizeProject(tmpDirectory, projectDirectory)
@@ -266,9 +265,9 @@ class RestGenerator implements FileUtil {
         mainMuleConfig.text = content
 
         def globalConfig = join(appDirectory, 'global', 'global-config.xml')
-        assert globalConfig.exists()
-        def gConfigContent = alterGlobalConfig(globalConfig, apiBaseName)
-        globalConfig.text = gConfigContent
+        if ( globalConfig.exists()) {
+            globalConfig.text = alterGlobalConfig(globalConfig, apiBaseName)
+        }
 
     }
 
@@ -286,14 +285,13 @@ class RestGenerator implements FileUtil {
         def rootElement = document.rootElement
 
         modifyApiAutodiscovery(rootElement, apiBaseName)
-
-        // TODO: this writes out OK, however, it compresses all the nodes, and removes formatting
+        
         // Format XML
         // Create custom Format - This at least keeps the new line spaces...
         def format = Format.getPrettyFormat()
         format.setIndent("  ")  // Set general indentation
-        format.setLineSeparator(System.lineSeparator())
-        format.setTextMode(Format.TextMode.PRESERVE)
+        format.setLineSeparator('\n')
+        format.setTextMode(Format.TextMode.TRIM)
 
         def writer = new StringWriter()
         def output = new XMLOutputter(format) //Format.prettyFormat)
@@ -308,7 +306,7 @@ class RestGenerator implements FileUtil {
      *   Remove console
      *   Update http:listener - Base path and http config reference
      *   Add an api.validation parameter to apikit:config
-     *   Replace standard error handler with reference to global-error-handler
+     *   Replace standard error handler with reference to 'global-error-handler'
      * @param flowPath        File object for the main configuration file
      * @param apiBaseName     API base name
      * @return
@@ -419,13 +417,13 @@ class RestGenerator implements FileUtil {
         }
     }
 
-    String updateApikitConfigApi(File flowPath, String newApiValue) {
+    String updateApikitConfig(File flowPath, String ramlRef) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
 
         // this assumes just a single apikit:config, and updates the first
-        rootElement.getChild('config', apiKit).setAttribute('api', newApiValue)
+        rootElement.getChild('config', apiKit).setAttribute('api', ramlRef)
 
         // Format XML
         def writer = new StringWriter()
