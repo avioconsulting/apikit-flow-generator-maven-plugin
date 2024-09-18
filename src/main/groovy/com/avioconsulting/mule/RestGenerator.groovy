@@ -22,6 +22,8 @@ import org.mule.tools.apikit.model.ScaffolderContext
 import org.mule.tools.apikit.model.ScaffoldingConfiguration
 import org.apache.maven.plugin.logging.Log
 
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.zip.ZipFile;
 
 class RestGenerator implements FileUtil {
@@ -31,6 +33,7 @@ class RestGenerator implements FileUtil {
     public static final Namespace xsi = Namespace.getNamespace('xsi', 'http://www.w3.org/2001/XMLSchema-instance')
     public static final Namespace doc = Namespace.getNamespace('doc', 'http://www.mulesoft.org/schema/mule/documentation')
     public static final Namespace ee = Namespace.getNamespace('ee', 'http://www.mulesoft.org/schema/mule/ee/core')
+    public static final Namespace apiGateway = Namespace.getNamespace('api-gateway', 'http://www.mulesoft.org/schema/mule/api-gateway')
 
     private Log log;
     private String apiName, apiVersion, httpConfigName, httpListenerBasePath, httpListenerPath
@@ -186,25 +189,24 @@ class RestGenerator implements FileUtil {
                                     'mule',
                                     apiBaseName + '.xml')
         def apiReferenceString = 'resource::' + ramlGroupId + ':' + ramlArtifactId + ':' + ramlVersion + ':raml:zip:' + ramlFilename
-        mainConfigFile.text = updateApikitConfigApi(mainConfigFile.text, apiReferenceString)
-
-        // def referenceString = 'resource::' + ramlGroupId + ':' + ramlArtifactId + ':' + ramlVersion + ':raml:zip:' + artifactId + '.raml'
-        //<apikit:config name="snipe-it-sys-api-config" api="resource::12f3c8f5-84c8-4d48-8e56-0712f9734e5b:snipe-it-sys-api-spec:1.0.0:raml:zip:snipe-it-sys-api.raml"
-        //              outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" disableValidations="${apikit.validation}" />
-
+        mainConfigFile.text = updateApikitConfigApi(mainConfigFile, apiReferenceString)
+        
         // Copy only relevant temp project files back to real project
         this.finalizeProject(tmpDirectory, projectDirectory)
     }
 
-    String updateApikitConfigApi(String xmlString, String newApiValue) {
-        XmlSlurper xmlSlurper = new XmlSlurper()
-        def xml = xmlSlurper.parseText(xmlString)
-        // Find the apikit:config element and update its api attribute
-        xml.'**'.find { it.name() == 'apikit:config' }?.@api = newApiValue
-        // Convert the modified XML back to a string
-        String xmlOutput = new groovy.xml.XmlUtil().serialize(xml)
-        return xmlOutput
-    }
+//    String updateApikitConfigApi(String xmlString, String newApiValue) {
+//        // this replaces the default namespace to 'tag0', while not invalid, its undesired
+//        // <tag0:flow name="snipe-it-sys-api-main">
+//        XmlSlurper xmlSlurper = new XmlSlurper(false, true)
+//        def xml = xmlSlurper.parseText(xmlString)
+//        // Find the apikit:config element and update its api attribute
+//        xml.'**'.find { it.name() == 'apikit:config' }?.@api = newApiValue
+//        // Convert the modified XML back to a string
+//        String xmlOutput = new groovy.xml.XmlUtil().serialize(xml)
+//        return xmlOutput
+//
+//    }
 
     public File setupTempProject(File projectDirectory) {
         File tmpDirectory = File.createTempDir()
@@ -274,24 +276,63 @@ class RestGenerator implements FileUtil {
         assert mainMuleConfig.exists()
 
         // Make updates to the generated base flow
-        def content = alterGeneratedFlow(mainMuleConfig)
-
+        def content = alterMainConfig(mainMuleConfig, apiBaseName)
         mainMuleConfig.text = content
+
+        def globalConfig = join(appDirectory, 'global', 'global-config.xml')
+        assert globalConfig.exists()
+        def gConfigContent = alterGlobalConfig(globalConfig, apiBaseName)
+        globalConfig.text = gConfigContent
+
     }
 
-    // Remove generated listener config (this is expected to exist in global-config.xml already)
-    // Remove Console
-    // Update http:listener - Path and http config reference
-    // Add api.validation parameter to apikit:config
-    // Write new flow content (XML Pretty)
-    // Returns pretty formatted xml string
-    public String alterGeneratedFlow(File flowPath) {
+    /**
+     * Intended to make updates to the global-config.xml file
+     * Changes include:
+     *   Update api-gateway autodiscovery flowRef to apiBaseName + '-main'
+     * @param flowPath        File object for the global config configuration file
+     * @param apiBaseName     API base name
+     * @return
+     */
+    public String alterGlobalConfig(File flowPath, String apiBaseName){
+        def builder = new SAXBuilder()
+        def document = builder.build(flowPath)
+        def rootElement = document.rootElement
+
+        modifyApiAutodiscovery(rootElement, apiBaseName)
+
+        // TODO: this writes out OK, however, it compresses all the nodes, and removes formatting
+        // Format XML
+        // Create custom Format - This at least keeps the new line spaces...
+        def format = Format.getPrettyFormat()
+        format.setIndent("  ")  // Set general indentation
+        format.setLineSeparator(System.lineSeparator())
+        format.setTextMode(Format.TextMode.PRESERVE)
+
+        def writer = new StringWriter()
+        def output = new XMLOutputter(format) //Format.prettyFormat)
+        output.output(document, writer)
+        return writer.toString()
+    }
+
+    /**
+     * Intended to alter the main configuration file to meet AVIO standards
+     * This includes:
+     *   Remove generated listener config (this is expected to already exist in global-config.xml)
+     *   Remove console
+     *   Update http:listener - Base path and http config reference
+     *   Add an api.validation parameter to apikit:config
+     * @param flowPath        File object for the main configuration file
+     * @param apiBaseName     API base name
+     * @return
+     */
+    public String alterMainConfig(File flowPath, String apiBaseName) {
         def builder = new SAXBuilder()
         def document = builder.build(flowPath)
         def rootElement = document.rootElement
 
         removeHttpListenerConfigs(rootElement)
-        removeConsole(rootElement, apiName)
+        removeConsole(rootElement, apiBaseName)
         modifyHttpListeners(rootElement)
 
         // Adds api.validation parameter
@@ -304,7 +345,7 @@ class RestGenerator implements FileUtil {
         return writer.toString()
     }
 
-    private static Element getMainFlow(Element rootElement, String apiBaseName) {
+    private Element getMainFlow(Element rootElement, String apiBaseName) {
         def lookFor = "${apiBaseName}-main"
         Element mainFlow = rootElement.getChildren('flow',
                 core).find { element ->
@@ -314,7 +355,7 @@ class RestGenerator implements FileUtil {
         return mainFlow
     }
 
-    private static void removeConsole(Element rootElement, String apiBaseName) {
+    private void removeConsole(Element rootElement, String apiBaseName) {
         def lookFor = "${apiBaseName}-console"
         def consoleFlow = rootElement.getChildren('flow',
                 core).find { element ->
@@ -324,18 +365,22 @@ class RestGenerator implements FileUtil {
         rootElement.removeContent(consoleFlow)
     }
 
-    private static boolean removeHttpListenerConfigs(Element rootElement) {
+    private void modifyApiAutodiscovery(Element rootElement, String apiBaseName) {
+        rootElement.getChild('autodiscovery', apiGateway).setAttribute('flowRef', apiBaseName + '-main')
+    }
+
+    private boolean removeHttpListenerConfigs(Element rootElement) {
         rootElement.removeChildren('listener-config', http)
     }
 
-    private static void parameterizeApiKitConfig(Element flowNode) {
+    private void parameterizeApiKitConfig(Element flowNode) {
         def apiKitConfig = flowNode.getChild('config', apiKit)
         assert apiKitConfig
         // allow projects to control this via properties
         apiKitConfig.setAttribute('disableValidations', '${api.validation}')
     }
 
-    private static void modifyHttpListeners(Element flowNode) {
+    private void modifyHttpListeners(Element flowNode) {
         def listeners = flowNode.getChildren('flow', core).collect { flow ->
                         flow.getChildren('listener',
                                 http)
@@ -365,9 +410,24 @@ class RestGenerator implements FileUtil {
 
                 apiParts += [apiVersion, '*']
 
-                listenerPathAttribute.value = apiParts.join('/')
+                listenerPathAttribute.value = '/' + apiParts.join('/')
             }
         }
+    }
+
+    String updateApikitConfigApi(File flowPath, String newApiValue) {
+        def builder = new SAXBuilder()
+        def document = builder.build(flowPath)
+        def rootElement = document.rootElement
+
+        // this assumes just a single apikit:config, and updates the first
+        rootElement.getChild('config', apiKit).setAttribute('api', newApiValue)
+
+        // Format XML
+        def writer = new StringWriter()
+        def output = new XMLOutputter(Format.prettyFormat)
+        output.output(document, writer)
+        return writer.toString()
     }
 
     File getArtifact(File repo, String groupId, String artifactId, String version) {
@@ -434,8 +494,8 @@ class RestGenerator implements FileUtil {
         return ramlFilename
     }
 
-    void replaceNewlinesRecursively(path) {
-        Files.walk(Paths.get(path)).forEach { filePath ->
+    void replaceNewlinesRecursively(File path) {
+        Files.walk(Paths.get(path.toURI())).forEach { filePath ->
             if(!Files.isDirectory(filePath) && isText(filePath)){
                 def content = new String(Files.readAllBytes(filePath))
                 content = content.replaceAll("\r\n", "\n")
