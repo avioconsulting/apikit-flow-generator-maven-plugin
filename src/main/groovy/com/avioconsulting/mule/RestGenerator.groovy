@@ -220,8 +220,7 @@ class RestGenerator implements FileUtil {
         replaceNewlinesRecursively(projectDirectory)
     }
 
-    public void generate(File projectDirectory,
-                         String ramlFilename) {
+    public void generate(File projectDirectory, String ramlFilename) {
 
         // Without runtime edition EE, we won't use weaves in the output
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
@@ -309,6 +308,7 @@ class RestGenerator implements FileUtil {
      *   Remove console
      *   Update http:listener - Base path and http config reference
      *   Add an api.validation parameter to apikit:config
+     *   Replace standard error handler with reference to global-error-handler
      * @param flowPath        File object for the main configuration file
      * @param apiBaseName     API base name
      * @return
@@ -324,6 +324,11 @@ class RestGenerator implements FileUtil {
 
         // Adds api.validation parameter
         parameterizeApiKitConfig(rootElement)
+
+        // Remove standard error handler, add reference to global-error-handler
+        def mainFlow = getMainFlow(rootElement, apiBaseName)
+        removeErrorHandler(mainFlow)
+        addDefaultErrorHandler(mainFlow)
 
         // Format XML
         def writer = new StringWriter()
@@ -350,6 +355,18 @@ class RestGenerator implements FileUtil {
         }
         assert consoleFlow: "Was looking for flow ${lookFor}"
         rootElement.removeContent(consoleFlow)
+    }
+
+    private void removeErrorHandler(Element mainFlow) {
+        def errorHandler = mainFlow.getChild('error-handler', core)
+        mainFlow.removeContent(errorHandler)
+    }
+
+    private void addDefaultErrorHandler(Element mainFlow) {
+        // adds '<error-handler ref="global-error-handler"/>' to main flow
+        def defaultErrorHandler = new Element('error-handler', core)
+        defaultErrorHandler.setAttribute('ref', 'global-error-handler')
+        mainFlow.addContent(defaultErrorHandler)
     }
 
     private void modifyApiAutodiscovery(Element rootElement, String apiBaseName) {
