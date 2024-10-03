@@ -1,5 +1,5 @@
 # APIKit Flow Generator Maven Plugin for Mule 4
-This maven plugin generates mule flows for REST or SOAP APIs.
+This maven plugin generates mule flows for REST or SOAP APIs. 
 
 ## Usage
 
