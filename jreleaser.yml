@@ -67,7 +67,7 @@ deploy:
       maven-central:
         active: ALWAYS
         url: https://oss.sonatype.org/service/local
-        snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots/
+        snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots
         applyMavenCentralRules: true
         verifyPom: false
         closeRepository: true
