@@ -219,8 +219,15 @@ class RestGenerator implements FileUtil {
         replaceNewlinesRecursively(projectDirectory)
     }
 
-    public void generate(File projectDirectory, String ramlFilename) {
-
+    /**
+     * Generates Mule configuration content from RAML file and returns as a Map of filename to content strings.
+     * This method performs the core generation logic without writing files to disk.
+     * 
+     * @param projectDirectory The project directory containing the RAML file
+     * @param ramlFilename The RAML filename to process
+     * @return Map where keys are config filenames and values are the generated XML content as strings
+     */
+    public Map<String, String> generateConfigs(File projectDirectory, String ramlFilename) {
         // Without runtime edition EE, we won't use weaves in the output
         def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
 
@@ -243,6 +250,32 @@ class RestGenerator implements FileUtil {
         assert result.errors == []
         assert result.generatedConfigs.size() > 0
 
+        // Process the generated configs and apply transformations
+        Map<String, String> configMap = [:]
+        def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
+        
+        result.generatedConfigs.each { config ->
+            def configContent = config.content.text
+            
+            // Apply transformations to main config file
+            if (config.name == apiBaseName + '.xml') {
+                configContent = alterMainConfigContent(configContent, apiBaseName)
+            }
+            // Apply transformations to global config file if present
+            else if (config.name == 'global/global-config.xml') {
+                configContent = alterGlobalConfigContent(configContent, apiBaseName)
+            }
+            
+            configMap[config.name] = configContent
+        }
+        
+        return configMap
+    }
+
+    public void generate(File projectDirectory, String ramlFilename) {
+        // Generate configs using the new method
+        def configMap = generateConfigs(projectDirectory, ramlFilename)
+        
         // Write out configuration file(s) in src/main/mule
         def appDirectory = join(projectDirectory,
                 'src',
@@ -250,25 +283,40 @@ class RestGenerator implements FileUtil {
                 'mule')
         appDirectory.mkdirs()
 
-        result.generatedConfigs.each { config ->
-            new File(appDirectory, config.name).text = config.content.text
+        configMap.each { filename, content ->
+            def configFile = new File(appDirectory, filename)
+            // Create parent directories if needed (e.g., for global/global-config.xml)
+            configFile.parentFile.mkdirs()
+            configFile.text = content
         }
+    }
 
-        // Mule's generator will use the RAML filename by convention
-        def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
+    /**
+     * Intended to make updates to the global-config.xml file content
+     * Changes include:
+     *   Update api-gateway autodiscovery flowRef to apiBaseName + '-main'
+     * @param configContent   String content of the global config configuration file
+     * @param apiBaseName     API base name
+     * @return
+     */
+    public String alterGlobalConfigContent(String configContent, String apiBaseName){
+        def builder = new SAXBuilder()
+        def document = builder.build(new StringReader(configContent))
+        def rootElement = document.rootElement
 
-        def mainMuleConfig = new File(appDirectory, apiBaseName + '.xml')
-        assert mainMuleConfig.exists()
+        modifyApiAutodiscovery(rootElement, apiBaseName)
+        
+        // Format XML
+        // Create custom Format - This at least keeps the new line spaces...
+        def format = Format.getPrettyFormat()
+        format.setIndent("  ")  // Set general indentation
+        format.setLineSeparator('\n')
+        format.setTextMode(Format.TextMode.TRIM)
 
-        // Make updates to the generated base flow
-        def content = alterMainConfig(mainMuleConfig, apiBaseName)
-        mainMuleConfig.text = content
-
-        def globalConfig = join(appDirectory, 'global', 'global-config.xml')
-        if ( globalConfig.exists()) {
-            globalConfig.text = alterGlobalConfig(globalConfig, apiBaseName)
-        }
-
+        def writer = new StringWriter()
+        def output = new XMLOutputter(format) //Format.prettyFormat)
+        output.output(document, writer)
+        return writer.toString()
     }
 
     /**
@@ -295,6 +343,42 @@ class RestGenerator implements FileUtil {
 
         def writer = new StringWriter()
         def output = new XMLOutputter(format) //Format.prettyFormat)
+        output.output(document, writer)
+        return writer.toString()
+    }
+
+    /**
+     * Intended to alter the main configuration file content to meet AVIO standards
+     * This includes:
+     *   Remove generated listener config (this is expected to already exist in global-config.xml)
+     *   Remove console
+     *   Update http:listener - Base path and http config reference
+     *   Add an api.validation parameter to apikit:config
+     *   Replace standard error handler with reference to 'global-error-handler'
+     * @param configContent   String content of the main configuration file
+     * @param apiBaseName     API base name
+     * @return
+     */
+    public String alterMainConfigContent(String configContent, String apiBaseName) {
+        def builder = new SAXBuilder()
+        def document = builder.build(new StringReader(configContent))
+        def rootElement = document.rootElement
+
+        removeHttpListenerConfigs(rootElement)
+        removeConsole(rootElement, apiBaseName)
+        modifyHttpListeners(rootElement)
+
+        // Adds api.validation parameter
+        parameterizeApiKitConfig(rootElement)
+
+        // Remove standard error handler, add reference to global-error-handler
+        def mainFlow = getMainFlow(rootElement, apiBaseName)
+        removeErrorHandler(mainFlow)
+        addDefaultErrorHandler(mainFlow)
+
+        // Format XML
+        def writer = new StringWriter()
+        def output = new XMLOutputter(Format.prettyFormat)
         output.output(document, writer)
         return writer.toString()
     }
