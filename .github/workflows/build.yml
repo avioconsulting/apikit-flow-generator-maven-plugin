@@ -25,7 +25,7 @@ jobs:
     secrets: inherit
     with:
       app-version: ${{ needs.Build-Maven.outputs.app-version }}
-      publish-maven-central: false
+      publish-maven-central: true
 
   Post-Release-Maven:
     needs: [Build-Maven, Release-Maven]

@@ -37,7 +37,7 @@ mvn com.avioconsulting.mule:apikit-flow-generator-maven-plugin:generateFlowRest 
 
 ### RAML/API Sources Supported
 1. **Local RAML files**: `ramlDirectory` + `ramlFilename`
-2. **Exchange artifacts**: `ramlGroupId` + `ramlArtifactId` (resolved from Maven dependencies)  
+2. **Exchange artifacts**: `ramlGroupId` + `ramlArtifactId` (resolved from Maven dependencies)
 3. **Design Center projects**: `ramlDcProject` + `ramlDcBranch` with Anypoint credentials
 
 ### Authentication Methods

@@ -73,21 +73,3 @@ signing:
   armored: true
   mode: MEMORY
 
-deploy:
-  maven:
-    nexus2:
-      maven-central:
-        active: ALWAYS
-        url: https://oss.sonatype.org/service/local
-        snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots
-        applyMavenCentralRules: true
-        verifyPom: false
-        closeRepository: true
-        releaseRepository: true
-        stagingRepositories:
-          - target/staging-deploy
-
-distributions:
-  apikit-flow-generator-maven-plugin:
-    artifacts:
-      - path: target/apikit-flow-generator-maven-plugin-{{projectVersion}}.jar

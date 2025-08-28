@@ -1,5 +1,5 @@
 # APIKit Flow Generator Maven Plugin for Mule 4
-This maven plugin generates mule flows for REST or SOAP APIs. 
+This maven plugin generates mule flows for REST or SOAP APIs.
 
 ## Usage
 
@@ -36,7 +36,7 @@ See [working-with-the-apache-maven-registry#authenticating-with-a-personal-acces
     <version>7.5.1.1</version>
 </plugin>
 ```
-This makes two goals available to generate flows - 
+This makes two goals available to generate flows -
 1. apikit-flow-generator:generateFlowRest
 2. apikit-flow-generator:generateFlowSoap
 
