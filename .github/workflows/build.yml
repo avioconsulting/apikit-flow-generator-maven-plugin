@@ -16,8 +16,11 @@ jobs:
     uses: avioconsulting/shared-workflows/.github/workflows/maven-build.yml@main
     secrets: inherit
     with:
-      include-mule-ee-repo: false
-      stage-maven-artifacts: true
+      include-mule-ee-repo: true
+    #   java-distribution: adopt-hotspot
+    #   java-version: 8
+    #   include-test-results: true
+    #   maven-args: -X
 
   Release-Maven:
     needs: Build-Maven
@@ -25,7 +28,11 @@ jobs:
     secrets: inherit
     with:
       app-version: ${{ needs.Build-Maven.outputs.app-version }}
-      publish-maven-central: false
+      publish-maven-central: true
+    #   java-distribution: adopt-hotspot
+    #   java-version: 8
+    #   maven-args: -X
+    #   main-branch: main
 
   Post-Release-Maven:
     needs: [Build-Maven, Release-Maven]
@@ -33,3 +40,8 @@ jobs:
     secrets: inherit
     with:
       app-version: ${{ needs.Build-Maven.outputs.app-version }}
+    #   java-distribution: adopt-hotspot
+    #   java-version: 8
+    #   maven-args: -X
+    #   main-branch: main
+    #   pr-reviewers: adesjardin, manikmagar, kkingavio
