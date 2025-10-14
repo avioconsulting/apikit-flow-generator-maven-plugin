@@ -353,7 +353,7 @@ class RestGenerator implements FileUtil {
      *   Remove generated listener config (this is expected to already exist in global-config.xml)
      *   Remove console
      *   Update http:listener - Base path and http config reference
-     *   Add an api.validation parameter to apikit:config
+     *   Add an apikit.validation.disabled parameter to apikit:config
      *   Replace standard error handler with reference to 'global-error-handler'
      * @param configContent   String content of the main configuration file
      * @param apiBaseName     API base name
@@ -368,7 +368,7 @@ class RestGenerator implements FileUtil {
         removeConsole(rootElement, apiBaseName)
         modifyHttpListeners(rootElement)
 
-        // Adds api.validation parameter
+        // Adds apikit.validation.disabled parameter
         parameterizeApiKitConfig(rootElement)
 
         // Remove standard error handler, add reference to global-error-handler
@@ -389,7 +389,7 @@ class RestGenerator implements FileUtil {
      *   Remove generated listener config (this is expected to already exist in global-config.xml)
      *   Remove console
      *   Update http:listener - Base path and http config reference
-     *   Add an api.validation parameter to apikit:config
+     *   Add an apikit.validation.disabled parameter to apikit:config
      *   Replace standard error handler with reference to 'global-error-handler'
      * @param flowPath        File object for the main configuration file
      * @param apiBaseName     API base name
@@ -404,7 +404,7 @@ class RestGenerator implements FileUtil {
         removeConsole(rootElement, apiBaseName)
         modifyHttpListeners(rootElement)
 
-        // Adds api.validation parameter
+        // Adds apikit.validation.disabled parameter
         parameterizeApiKitConfig(rootElement)
 
         // Remove standard error handler, add reference to global-error-handler
@@ -463,7 +463,7 @@ class RestGenerator implements FileUtil {
         def apiKitConfig = flowNode.getChild('config', apiKit)
         assert apiKitConfig
         // allow projects to control this via properties
-        apiKitConfig.setAttribute('disableValidations', '${api.validation}')
+        apiKitConfig.setAttribute('disableValidations', '${apikit.validation.disabled}')
     }
 
     private void modifyHttpListeners(Element flowNode) {
