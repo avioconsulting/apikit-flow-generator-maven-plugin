@@ -514,7 +514,7 @@ class RestGeneratorTest implements FileUtil {
 //        def apiKitConfig = xmlNode[apiKit.'config'][0]
 //        assert apiKitConfig
 //        assertThat apiKitConfig.'@disableValidations',
-//                   is(equalTo('${api.validation}'))
+//                   is(equalTo('${apikit.validation.disabled}'))
 //    }
 //
 //    def getChildNodeNames(Node node) {
