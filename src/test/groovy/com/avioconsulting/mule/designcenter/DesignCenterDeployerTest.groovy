@@ -145,10 +145,10 @@ class DesignCenterDeployerTest extends BaseTest {
                                         null,
                                         'FOLDER'),
                            new RamlFile('examples/foo.raml',
-                                        'the contents\n',
+                                        "the contents${System.lineSeparator()}",
                                         'FILE'),
                            new RamlFile('stuff.raml',
-                                        'the contents\n',
+                                        "the contents${System.lineSeparator()}",
                                         'FILE')
                    ]))
         assertThat urls,

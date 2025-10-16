@@ -115,8 +115,12 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
         // Using Local RAML
         if (ramlDirectory) {
             log.info "Using local RAML files in directory: ${ramlDirectory.absolutePath}"
-            assert ramlDirectory.exists()
-            assert new File(ramlDirectory, ramlFilename).exists()
+            assert ramlDirectory.exists(): "RAML directory does not exist: ${ramlDirectory.absolutePath}"
+            // Validate that ramlFilename exists if it was explicitly provided
+            if (ramlFilename) {
+                def ramlFile = new File(ramlDirectory, ramlFilename)
+                assert ramlFile.exists(): "RAML file does not exist: ${ramlFile.absolutePath}"
+            }
             generator.generateFromLocal(mavenProject.basedir,
                     ramlDirectory,
                     ramlFilename)
