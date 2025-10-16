@@ -275,7 +275,7 @@ class RestGenerator implements FileUtil {
     public void generate(File projectDirectory, String ramlFilename) {
         // Generate configs using the new method
         def configMap = generateConfigs(projectDirectory, ramlFilename)
-        
+
         // Write out configuration file(s) in src/main/mule
         def appDirectory = join(projectDirectory,
                 'src',
@@ -288,6 +288,15 @@ class RestGenerator implements FileUtil {
             // Create parent directories if needed (e.g., for global/global-config.xml)
             configFile.parentFile.mkdirs()
             configFile.text = content
+        }
+
+        def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
+
+        // Modify existing global-config.xml if it exists in the project
+        def globalConfigFile = join(projectDirectory, 'src', 'main', 'mule', 'global', 'global-config.xml')
+        if (globalConfigFile.exists()) {
+            log.info "Updating existing global-config.xml with API autodiscovery flowRef"
+            globalConfigFile.text = alterGlobalConfig(globalConfigFile, apiBaseName)
         }
     }
 
