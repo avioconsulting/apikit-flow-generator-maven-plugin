@@ -564,12 +564,13 @@ class RestGenerator implements FileUtil {
     void processDeps(File ramlDirectory, File localRepository) {
         // Get Exchange Info
         def exchangeInfo = getExchangeInfo(ramlDirectory)
+        def dependencies = exchangeInfo?.dependencies
 
         // If Has deps
-        if (exchangeInfo.dependencies.size() > 0) {
+        if (dependencies instanceof Collection && !dependencies.isEmpty()) {
             def modulesDir = new File(ramlDirectory, 'exchange_modules')
             modulesDir.mkdirs()
-            exchangeInfo.dependencies.each { dep ->
+            dependencies.each { dep ->
                 def artifact = getArtifact(localRepository, dep.groupId, dep.assetId, dep.version)
                 def targetDir = new File(modulesDir, dep.groupId + File.separator + dep.assetId + File.separator + dep.version)
                 targetDir.mkdirs()
