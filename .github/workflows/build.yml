@@ -17,8 +17,8 @@ jobs:
     secrets: inherit
     with:
       include-mule-ee-repo: true
-    #   java-distribution: adopt-hotspot
-    #   java-version: 8
+      java-distribution: temurin
+      java-version: '17'
     #   include-test-results: true
     #   maven-args: -X
 
@@ -29,8 +29,8 @@ jobs:
     with:
       app-version: ${{ needs.Build-Maven.outputs.app-version }}
       publish-maven-central: true
-    #   java-distribution: adopt-hotspot
-    #   java-version: 8
+      java-distribution: temurin
+      java-version: '17'
     #   maven-args: -X
     #   main-branch: main
 
@@ -40,8 +40,8 @@ jobs:
     secrets: inherit
     with:
       app-version: ${{ needs.Build-Maven.outputs.app-version }}
-    #   java-distribution: adopt-hotspot
-    #   java-version: 8
+      java-distribution: temurin
+      java-version: '17'
     #   maven-args: -X
     #   main-branch: main
     #   pr-reviewers: adesjardin, manikmagar, kkingavio

@@ -146,6 +146,10 @@
   </dependencies>
 
   <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
     <!-- Override the internal-only URL declared by MuleSoft's library POMs. -->
     <repository>
       <id>mulesoft-maven-all</id>
