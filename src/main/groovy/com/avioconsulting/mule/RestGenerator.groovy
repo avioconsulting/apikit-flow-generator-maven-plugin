@@ -14,7 +14,8 @@ import org.jdom2.input.SAXBuilder
 import org.jdom2.output.Format
 import org.jdom2.output.XMLOutputter
 import org.mule.apikit.model.api.ApiReference
-import org.mule.parser.service.strategy.RamlParsingStrategy
+import org.mule.apikit.loader.ResourceLoader
+import org.mule.parser.service.ParserService
 import org.mule.tools.apikit.MainAppScaffolder
 import org.mule.tools.apikit.model.RuntimeEdition
 import org.mule.tools.apikit.model.ScaffolderContext
@@ -79,6 +80,10 @@ class RestGenerator implements FileUtil {
         // Do the work
         ramlFilename = getDefaultRamlFilename(ramlFilename, apiDirectory)
         generate(tmpDirectory, ramlFilename)
+
+        File mainConfig = join(tmpDirectory, 'src', 'main', 'mule',
+                FilenameUtils.getBaseName(ramlFilename) + '.xml')
+        mainConfig.text = updateApikitConfig(mainConfig, 'api/' + ramlFilename.replace('\\', '/'))
 
         // Copy temp project files back to real project
         this.finalizeProject(tmpDirectory, projectDirectory)
@@ -158,40 +163,43 @@ class RestGenerator implements FileUtil {
                                      String ramlGroupId,
                                      String ramlArtifactId,
                                      String ramlVersion,
-                                     File localRepository) {
+                                     File localRepository,
+                                     File resolvedArtifact = null,
+                                     String classifier = 'raml') {
 
-        // Create temp project
-        File tmpDirectory = this.setupTempProject(projectDirectory)
-        File tmpApiDirectory = join(tmpDirectory,
-                'src',
-                'main',
-                'resources',
-                'api')
-        tmpApiDirectory.mkdirs()
-
-        // Find and expand RAML dependencies into temp project
-        log.info "Using local repository: " + localRepository
-        File raml = getArtifact(localRepository, ramlGroupId, ramlArtifactId, ramlVersion)
-        expandArtifact(raml, tmpApiDirectory)
-        processDeps(tmpApiDirectory, localRepository)
-
-        // do the work
-        String ramlFilename = getMainRaml(tmpApiDirectory)
-        this.generate(tmpDirectory, ramlFilename)
+        File raml = resolvedArtifact ?: getArtifact(localRepository, ramlGroupId, ramlArtifactId, ramlVersion, classifier)
+        String ramlFilename = new ZipFile(raml).withCloseable { zip ->
+            def metadata = zip.getEntry('exchange.json')
+            if (!metadata) {
+                throw new IllegalArgumentException("Missing exchange.json in ${raml}")
+            }
+            def info = zip.getInputStream(metadata).withCloseable { stream -> new JsonSlurper().parse(stream) }
+            if (!(info.main instanceof String) || !zip.getEntry(info.main)) {
+                throw new IllegalArgumentException("Missing API entrypoint ${info.main} in ${raml}")
+            }
+            info.main
+        }
+        String prefix = "resource::${ramlGroupId}:${ramlArtifactId}:${ramlVersion}:${classifier}:zip:"
+        ResourceLoader loader = { String location ->
+            if (!location.startsWith(prefix)) return null
+            String entry = location.substring(prefix.length())
+            String encodedEntry = new URI(null, null, '/' + entry, null).rawPath.substring(1)
+            new URI('jar:' + raml.toURI().toASCIIString() + '!/' + encodedEntry)
+        } as ResourceLoader
+        def apiReferenceString = prefix + ramlFilename
+        def configs = generateFromReference(ApiReference.create(apiReferenceString, loader), ramlFilename)
+        writeConfigs(projectDirectory, ramlFilename, configs)
 
         // Update APIkit router w/ exchange URL to RAML
         def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
-        File mainConfigFile = join(tmpDirectory,
+        File mainConfigFile = join(projectDirectory,
                                     'src',
                                     'main',
                                     'mule',
                                     apiBaseName + '.xml')
-        def apiReferenceString = 'resource::' + ramlGroupId + ':' + ramlArtifactId + ':' + ramlVersion + ':raml:zip:' + ramlFilename
         log.info "Updating apikit api reference to " + apiReferenceString
         mainConfigFile.text = updateApikitConfig(mainConfigFile, apiReferenceString)
 
-        // Copy only relevant temp project files back to real project
-        this.finalizeProject(tmpDirectory, projectDirectory)
     }
 
     public File setupTempProject(File projectDirectory) {
@@ -228,9 +236,6 @@ class RestGenerator implements FileUtil {
      * @return Map where keys are config filenames and values are the generated XML content as strings
      */
     public Map<String, String> generateConfigs(File projectDirectory, String ramlFilename) {
-        // Without runtime edition EE, we won't use weaves in the output
-        def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
-
         // Generate the flows
         def ramlFile = join(projectDirectory,
                 'src',
@@ -240,30 +245,39 @@ class RestGenerator implements FileUtil {
                 ramlFilename)
         assert ramlFile.exists()
 
-        // Scaffold the RAML
-        def parseResult = new RamlParsingStrategy().parse(ApiReference.create(ramlFile.absolutePath))
-        assert parseResult.errors == []
+        return generateFromReference(ApiReference.create(ramlFile.toURI()), ramlFilename)
+    }
+
+    private Map<String, String> generateFromReference(ApiReference reference, String ramlFilename) {
+        def scaffolder = new MainAppScaffolder(new ScaffolderContext(RuntimeEdition.EE))
+        def parseResult = new ParserService().parse(reference)
+        if (!parseResult.success()) {
+            throw new IllegalArgumentException("Cannot parse API ${ramlFilename}: ${parseResult.errors}")
+        }
         def result = scaffolder.run(ScaffoldingConfiguration.builder()
                 .withApi(parseResult.get())
                 .withMuleConfigurations([])
                 .build())
-        assert result.errors == []
-        assert result.generatedConfigs.size() > 0
+        if (!result.success || result.generatedConfigs.isEmpty()) {
+            throw new IllegalStateException("Cannot generate flows for ${ramlFilename}: ${result.errors}; generated ${result.generatedConfigs.size()} configurations")
+        }
 
         // Process the generated configs and apply transformations
         Map<String, String> configMap = [:]
         def apiBaseName = FilenameUtils.getBaseName(ramlFilename)
         
         result.generatedConfigs.each { config ->
-            def configContent = config.content.text
+            def configContent
             
             // Apply transformations to main config file
             if (config.name == apiBaseName + '.xml') {
-                configContent = alterMainConfigContent(configContent, apiBaseName)
+                configContent = alterMainConfigDocument(config.contentAsDocument, apiBaseName)
             }
             // Apply transformations to global config file if present
             else if (config.name == 'global/global-config.xml') {
-                configContent = alterGlobalConfigContent(configContent, apiBaseName)
+                configContent = alterGlobalConfigContent(config.content.text, apiBaseName)
+            } else {
+                configContent = config.content.text
             }
             
             configMap[config.name] = configContent
@@ -275,7 +289,10 @@ class RestGenerator implements FileUtil {
     public void generate(File projectDirectory, String ramlFilename) {
         // Generate configs using the new method
         def configMap = generateConfigs(projectDirectory, ramlFilename)
+        writeConfigs(projectDirectory, ramlFilename, configMap)
+    }
 
+    private void writeConfigs(File projectDirectory, String ramlFilename, Map<String, String> configMap) {
         // Write out configuration file(s) in src/main/mule
         def appDirectory = join(projectDirectory,
                 'src',
@@ -371,6 +388,10 @@ class RestGenerator implements FileUtil {
     public String alterMainConfigContent(String configContent, String apiBaseName) {
         def builder = new SAXBuilder()
         def document = builder.build(new StringReader(configContent))
+        return alterMainConfigDocument(document, apiBaseName)
+    }
+
+    private String alterMainConfigDocument(org.jdom2.Document document, String apiBaseName) {
         def rootElement = document.rootElement
 
         removeHttpListenerConfigs(rootElement)
@@ -525,30 +546,31 @@ class RestGenerator implements FileUtil {
         return writer.toString()
     }
 
-    File getArtifact(File repo, String groupId, String artifactId, String version) {
-        File artifactDir = new File(repo, groupId + File.separator + artifactId + File.separator + version)
-
-        if (artifactDir.exists() && artifactDir.isDirectory()) {
-            File artifactFile = artifactDir.listFiles().find {
-                it.name.endsWith('.zip')
-            }
-            return artifactFile
-        } else {
-            return null
+    File getArtifact(File repo, String groupId, String artifactId, String version, String classifier = 'raml') {
+        File artifactDir = new File(repo, groupId.replace('.', File.separator) + File.separator + artifactId + File.separator + version)
+        File artifact = new File(artifactDir, "${artifactId}-${version}-${classifier}.zip")
+        if (!artifact.isFile()) {
+            throw new IllegalArgumentException("Missing Exchange artifact ${groupId}:${artifactId}:zip:${classifier}:${version} at ${artifact}. Resolve that exact dependency through Maven; other ZIP classifiers are not substitutes.")
         }
+        return artifact
     }
 
     void expandArtifact(File artifact, File target) {
-        ZipFile zipFile = new ZipFile(artifact)
-
-        zipFile.entries().findAll { it.directory }.each {
-            log.debug "Creating Dir " + it.name
-            new File(target, it.name).mkdirs()
-        }
-
-        zipFile.entries().findAll { !it.directory }.each {
-            log.debug "Writing File " + it.name + "..."
-            new File(target, it.name).text = zipFile.getInputStream(it).text
+        new ZipFile(artifact).withCloseable { zipFile ->
+            zipFile.entries().each { entry ->
+                File output = new File(target, entry.name)
+                if (!output.canonicalFile.toPath().startsWith(target.canonicalFile.toPath())) {
+                    throw new IllegalArgumentException("Archive entry escapes destination: ${entry.name}")
+                }
+                if (entry.directory) {
+                    output.mkdirs()
+                } else {
+                    output.parentFile.mkdirs()
+                    zipFile.getInputStream(entry).withCloseable { input ->
+                        output.withOutputStream { stream -> stream << input }
+                    }
+                }
+            }
         }
     }
 

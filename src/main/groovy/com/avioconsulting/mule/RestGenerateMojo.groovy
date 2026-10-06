@@ -36,23 +36,23 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
     @Parameter(property = 'anypointOrganizationName')
     private String anypointOrganizationName
 
-    @Parameter(property = 'ramlDcProject')
-    private String ramlDcProject
+    @Parameter(property = 'specDcProject')
+    private String specDcProject
 
-    @Parameter(property = 'ramlDcBranch', defaultValue = 'master')
-    private String ramlDcBranch
+    @Parameter(property = 'specDcBranch', defaultValue = 'master')
+    private String specDcBranch
 
-    @Parameter(property = 'ramlFilename')
-    private String ramlFilename
+    @Parameter(property = 'specFilename')
+    private String specFilename
 
-    @Parameter(property = 'ramlDirectory')
-    private File ramlDirectory
+    @Parameter(property = 'specDirectory')
+    private File specDirectory
 
-    @Parameter(property = 'ramlGroupId')
-    private String ramlGroupId
+    @Parameter(property = 'specGroupId')
+    private String specGroupId
 
-    @Parameter(property = 'ramlArtifactId')
-    private String ramlArtifactId
+    @Parameter(property = 'specArtifactId')
+    private String specArtifactId
 
     @Parameter(property = 'insertApiNameInListenerPath',
             defaultValue = 'true')
@@ -113,51 +113,61 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                 insertApiNameInListenerPath)
 
         // Using Local RAML
-        if (ramlDirectory) {
-            log.info "Using local RAML files in directory: ${ramlDirectory.absolutePath}"
-            assert ramlDirectory.exists(): "RAML directory does not exist: ${ramlDirectory.absolutePath}"
-            // Validate that ramlFilename exists if it was explicitly provided
-            if (ramlFilename) {
-                def ramlFile = new File(ramlDirectory, ramlFilename)
+        if (specDirectory) {
+            log.info "Using local API files in directory: ${specDirectory.absolutePath}"
+            assert specDirectory.exists(): "API directory does not exist: ${specDirectory.absolutePath}"
+            // Validate that specFilename exists if it was explicitly provided
+            if (specFilename) {
+                def ramlFile = new File(specDirectory, specFilename)
                 assert ramlFile.exists(): "RAML file does not exist: ${ramlFile.absolutePath}"
             }
             generator.generateFromLocal(mavenProject.basedir,
-                    ramlDirectory,
-                    ramlFilename)
+                    specDirectory,
+                    specFilename)
         // Using RAML from Exchange
-        } else if (ramlGroupId && ramlArtifactId) {
-            log.info "Using RAML artifact from exchange: ${ramlGroupId}:${ramlArtifactId}"
-            String ramlVersion = null
-            mavenProject.getDependencies().each { Dependency dep ->
-                if(dep.groupId == ramlGroupId && dep.artifactId == ramlArtifactId) {
-                    ramlVersion = dep.getVersion()
-                }
+        } else if (specGroupId && specArtifactId) {
+            log.info "Using API artifact from Exchange: ${specGroupId}:${specArtifactId}"
+            def dependencies = mavenProject.getDependencies().findAll { Dependency dep ->
+                dep.groupId == specGroupId && dep.artifactId == specArtifactId &&
+                        dep.type == 'zip' && dep.classifier in ['raml', 'oas']
             }
-            if(!ramlVersion) {
-                throw new MojoFailureException("No RAML dependency found in pom.xml for ${ramlGroupId}:${ramlArtifactId}")
+            if (dependencies.size() != 1) {
+                throw new MojoFailureException("Expected exactly one zip dependency with classifier raml or oas in pom.xml for ${specGroupId}:${specArtifactId}; found ${dependencies.size()}")
+            }
+            String ramlVersion = dependencies[0].version
+            String classifier = dependencies[0].classifier
+            def resolved = mavenProject.artifacts.findAll { artifact ->
+                artifact.groupId == specGroupId && artifact.artifactId == specArtifactId &&
+                        (artifact.version == ramlVersion || artifact.baseVersion == ramlVersion) &&
+                        artifact.type == 'zip' && artifact.classifier == classifier
+            }
+            if (resolved.size() != 1 || !resolved[0].file?.isFile()) {
+                throw new MojoFailureException("Maven did not resolve exactly one file for ${specGroupId}:${specArtifactId}:zip:${classifier}:${ramlVersion}")
             }
 
             generator.generateFromExchange(mavenProject.basedir,
-                    ramlGroupId,
-                    ramlArtifactId,
+                    specGroupId,
+                    specArtifactId,
                     ramlVersion,
-                    new File((new URL(local.url)).toURI()))
+                    new File((new URL(local.url)).toURI()),
+                    resolved[0].file,
+                    classifier)
         // Using RAML from Design Center
-        } else if(ramlDcProject && ramlDcBranch) {
-            log.info "Using Design Center project ${ramlDcBranch} and branch ${ramlDcBranch}"
+        } else if(specDcProject && specDcBranch) {
+            log.info "Using Design Center project ${specDcProject} and branch ${specDcBranch}"
             if (anypointUsername && anypointPassword) {
                 generator.generateFromDesignCenterWithPassword(mavenProject.basedir,
-                        ramlDcProject,
-                        ramlDcBranch,
-                        ramlFilename,
+                        specDcProject,
+                        specDcBranch,
+                        specFilename,
                         anypointOrganizationName,
                         anypointUsername,
                         anypointPassword)
             } else if (anypointConnectedAppId && anypointConnectedAppSecret) {
                 generator.generateFromDesignCenter(mavenProject.basedir,
-                        ramlDcProject,
-                        ramlDcBranch,
-                        ramlFilename,
+                        specDcProject,
+                        specDcBranch,
+                        specFilename,
                         anypointOrganizationName,
                         anypointConnectedAppId,
                         anypointConnectedAppSecret)
@@ -165,7 +175,7 @@ class RestGenerateMojo extends AbstractMojo implements FileUtil {
                 throw new MojoFailureException('Values must be provided for either anypointUser/anypointPassword or anypointConnectedAppId/anypointConnectedAppSecret')
             }
         } else {
-            throw new MojoFailureException('Values must be provided for either ramlDirectory/ramlFilename, ramlGroupId/ramlArtifactId or ramlDcProject/ramlDcBranch/ramlFilename')
+            throw new MojoFailureException('Values must be provided for either specDirectory/specFilename, specGroupId/specArtifactId or specDcProject/specDcBranch/specFilename')
         }
 
 

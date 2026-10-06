@@ -3,6 +3,38 @@ This maven plugin generates mule flows for REST or SOAP APIs.
 
 ## Usage
 
+### REST Contract Sources
+
+REST generation supports RAML and OAS 3.0 through MuleSoft's `ParserService`
+and `MainAppScaffolder`. The plugin applies AVIO listener, validation,
+error-handler and autodiscovery settings to the generated configuration.
+
+For a local OAS contract, set `specDirectory` to the contract directory
+and `specFilename` to its entrypoint, such as `api.yaml`. These parameter
+names remain valid for both formats. Supply the entrypoint explicitly for OAS.
+
+For Exchange, the application's POM must declare exactly one matching API ZIP
+dependency with classifier `raml` or `oas`. The plugin uses Maven's resolved file
+and reads its entrypoint from `exchange.json`. It preserves that classifier in
+the generated `resource::` reference. OAS is parsed directly, without Exchange
+RAML conversion. If both classifiers are declared for the selected API, remove
+the unwanted dependency before generation. Other cached ZIPs do not affect the
+selection.
+
+Exchange generation reads `exchange.json` inside Maven's resolved ZIP and uses
+a resource loader to read the API and its included files through `jar:file:`
+URIs. It does not extract the contract into the application or a temporary
+project. Local contracts still use `src/main/resources/api/`.
+
+These changes are in `3.0.0-SNAPSHOT`; existing archetypes pinned to an older
+plugin must be updated before they can use this path. An OAS archetype path must
+also declare the API dependency with classifier `oas`.
+
+Version 3 replaces the `raml*` input prefix with `spec*`: `specDirectory`,
+`specFilename`, `specGroupId`, `specArtifactId`, `specDcProject` and
+`specDcBranch`. Exchange version and classifier come from the application POM.
+The archetype sets that dependency using `specVersion` and `specClassifier`.
+
 **Step0:** Configure AVIO Github Package Registry
 
 In your POM, add following plugin repository in `pluginRepositories` tag (add if doesn't exist) -
@@ -40,15 +72,10 @@ This makes two goals available to generate flows -
 1. apikit-flow-generator:generateFlowRest
 2. apikit-flow-generator:generateFlowSoap
 
-REST flow generation from RAML-
+REST flow generation from a local contract:
 ```
 mvn apikit-flow-generator:generateFlowRest \
-    -Dlocal.raml.directory=~/AnypointStudio/studio-workspace/test-api \
-    -Dmain.raml=test-api.raml \
-    -Danypoint.username= \
-    -Danypoint.password= \
-    -Danypoint.connected-app.id= \
-    -Danypoint.connected-app.secret= \
-    -DdesignCenter.project.name=
+    -DspecDirectory=/path/to/test-api \
+    -DspecFilename=test-api.raml
 ```
 _**NOTE:** Anypoint users with MFA enabled or SSO Users are not supported by this plugin._
