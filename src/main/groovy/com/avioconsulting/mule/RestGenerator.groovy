@@ -82,7 +82,7 @@ class RestGenerator implements FileUtil {
         generate(tmpDirectory, ramlFilename)
 
         File mainConfig = join(tmpDirectory, 'src', 'main', 'mule',
-                FilenameUtils.getBaseName(ramlFilename) + '.xml')
+                'global', 'apikit-config.xml')
         mainConfig.text = updateApikitConfig(mainConfig, 'api/' + ramlFilename.replace('\\', '/'))
 
         // Copy temp project files back to real project
@@ -196,7 +196,7 @@ class RestGenerator implements FileUtil {
                                     'src',
                                     'main',
                                     'mule',
-                                    apiBaseName + '.xml')
+                                    'global', 'apikit-config.xml')
         log.info "Updating apikit api reference to " + apiReferenceString
         mainConfigFile.text = updateApikitConfig(mainConfigFile, apiReferenceString)
 
@@ -283,6 +283,22 @@ class RestGenerator implements FileUtil {
             configMap[config.name] = configContent
         }
         
+        // Keep APIkit configuration separate from the generated routing flows.
+        String mainName = apiBaseName + '.xml'
+        if (configMap.containsKey(mainName)) {
+            def document = new SAXBuilder().build(new StringReader(configMap[mainName]))
+            def configs = document.rootElement.children.findAll {
+                it.name == 'config' && it.namespaceURI == 'http://www.mulesoft.org/schema/mule/mule-apikit'
+            }.toList()
+            if (!configs.empty) {
+                def configRoot = document.rootElement.clone()
+                configRoot.removeContent()
+                configs.each { configRoot.addContent(it.detach()) }
+                def output = new XMLOutputter(Format.prettyFormat)
+                configMap['global/apikit-config.xml'] = output.outputString(new org.jdom2.Document(configRoot))
+                configMap[mainName] = output.outputString(document)
+            }
+        }
         return configMap
     }
 
@@ -400,6 +416,8 @@ class RestGenerator implements FileUtil {
 
         // Adds apikit.validation.disabled parameter
         parameterizeApiKitConfig(rootElement)
+        nameExampleResponseTransforms(rootElement)
+        categorizeGeneratedLoggers(rootElement)
 
         // Remove standard error handler, add reference to global-error-handler
         def mainFlow = getMainFlow(rootElement, apiBaseName)
@@ -436,6 +454,8 @@ class RestGenerator implements FileUtil {
 
         // Adds apikit.validation.disabled parameter
         parameterizeApiKitConfig(rootElement)
+        nameExampleResponseTransforms(rootElement)
+        categorizeGeneratedLoggers(rootElement)
 
         // Remove standard error handler, add reference to global-error-handler
         def mainFlow = getMainFlow(rootElement, apiBaseName)
@@ -447,6 +467,33 @@ class RestGenerator implements FileUtil {
         def output = new XMLOutputter(Format.prettyFormat)
         output.output(document, writer)
         return writer.toString()
+    }
+
+    private void categorizeGeneratedLoggers(Element rootElement) {
+        rootElement.getChildren('flow', core).each { flow ->
+            flow.getChildren('logger', core).each { logger ->
+                if (!logger.getAttributeValue('category')) {
+                    logger.setAttribute('category', '${log.category}')
+                }
+            }
+        }
+    }
+
+    private void nameExampleResponseTransforms(Element rootElement) {
+        rootElement.getChildren('flow', core).each { flow ->
+            def parts = (flow.getAttributeValue('name') ?: '').split(':', 3)
+            if (parts.length < 3 || !(parts[0].toLowerCase(Locale.ROOT) in
+                    ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'])) return
+            String resource = parts[1].split('[^a-zA-Z0-9]+').findAll { it }
+                    .collect { it.capitalize() }.join(' ') ?: 'Root'
+            flow.getChildren('transform', ee).each { transform ->
+                if (transform.getAttributeValue('name', doc) == 'Transform Message' &&
+                        transform.getChild('message', ee)?.getChild('set-payload', ee) != null) {
+                    transform.setAttribute('name',
+                            "Set Example ${parts[0].toUpperCase(Locale.ROOT)} ${resource} Response", doc)
+                }
+            }
+        }
     }
 
     private Element getMainFlow(Element rootElement, String apiBaseName) {

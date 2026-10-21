@@ -69,7 +69,10 @@ class RestContractGenerationTest {
         }
 
         def root = new SAXBuilder().build(new File(project, 'src/main/mule/api.xml')).rootElement
-        def configs = root.getChildren('config', RestGenerator.apiKit)
+        assertTrue(root.getChildren('config', RestGenerator.apiKit).isEmpty())
+        def configRoot = new SAXBuilder().build(new File(project, 'src/main/mule/global/apikit-config.xml')).rootElement
+        assertTrue(configRoot.getChildren('flow', RestGenerator.core).isEmpty())
+        def configs = configRoot.getChildren('config', RestGenerator.apiKit)
         assertEquals(1, configs.size())
         def config = configs[0]
         assertEquals('api-config', config.getAttributeValue('name'))
@@ -89,6 +92,23 @@ class RestContractGenerationTest {
                 'post:\\orders\\(id):application\\xml:api-config'
         ] as Set, flows.collect { it.getAttributeValue('name') } as Set)
         def main = flows.find { it.getAttributeValue('name') == 'api-main' }
+        def loggers = flows.collectMany { it.getChildren('logger', RestGenerator.core) }
+        assertFalse(loggers.isEmpty())
+        loggers.each { assertEquals('${log.category}', it.getAttributeValue('category')) }
+        flows.findAll { it != main }.each { flow ->
+            flow.getChildren('transform', RestGenerator.ee).findAll {
+                it.getChild('message', RestGenerator.ee)?.getChild('set-payload', RestGenerator.ee) != null
+            }.each { transform ->
+                assertTrue(transform.getAttributeValue('name', RestGenerator.doc), transform.getAttributeValue('name', RestGenerator.doc).startsWith('Set Example '))
+                assertTrue(transform.getAttributeValue('name', RestGenerator.doc).endsWith(' Response'))
+            }
+        }
+        def exampleFlow = flows.find { it.getAttributeValue('name') == 'get:\\orders\\(id):api-config' }
+        def responseTransform = exampleFlow.getChildren('transform', RestGenerator.ee).find {
+            it.getChild('message', RestGenerator.ee)?.getChild('set-payload', RestGenerator.ee) != null
+        }
+        assertNotNull(responseTransform)
+        assertEquals('Set Example GET Orders Id Response', responseTransform.getAttributeValue('name', RestGenerator.doc))
         assertEquals('api-config', main.getChild('router', RestGenerator.apiKit).getAttributeValue('config-ref'))
         def listener = main.getChild('listener', RestGenerator.http)
         assertEquals('shared-listener', listener.getAttributeValue('config-ref'))
